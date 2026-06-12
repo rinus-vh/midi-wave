@@ -1,0 +1,18 @@
+.app {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 64px);
+  gap: 12px;
+  padding: 12px;
+  min-height: 100dvh;
+  align-content: start;
+  color: var(--color);
+  background-color: color-mix(in srgb, var(--background-color) 94%, var(--color));
+
+  & > .headerLayout {
+    grid-column: 1 / -1;
+  }
+
+  & > .gridLayout {
+    grid-column: 1 / -1;
+  }
+}
