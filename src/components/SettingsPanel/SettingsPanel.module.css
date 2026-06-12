@@ -1,0 +1,190 @@
+.component_root {
+  height: 100%;
+}
+
+.component {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-20);
+  padding: var(--size-16);
+  overflow-y: auto;
+
+  & > .resetLayout {
+    width: 100%;
+    margin-top: auto;
+  }
+}
+
+.deviceSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-16);
+  padding: var(--size-12) var(--size-12) var(--size-16);
+  border-radius: var(--radius-8);
+  background-color: var(--offset-color);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-8);
+}
+
+/* MIDI alert box */
+.midiAlert {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-8);
+  padding: var(--size-10) var(--size-12);
+  border-radius: var(--radius-8);
+  background-color: var(--offset-color);
+}
+
+/* MIDI status row */
+.midiStatusRow {
+  display: flex;
+  align-items: center;
+  gap: var(--size-6);
+  color: var(--color-gray-500);
+
+  &.midiStatusActive {
+    color: var(--interaction-color);
+  }
+}
+
+.midiStatusRow {
+  & > .statusIconLayout {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+}
+
+.removeColorBtn {
+  & > .removeIconLayout {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+.addColorBtn {
+  & > .addIconLayout {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Knob grid */
+.knobGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 4px;
+}
+
+.knobCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* MIDI enable row below each knob */
+.midiRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  & > .noteInput {
+    width: 44px;
+  }
+}
+
+.noteInput {
+  background-color: var(--surface-color);
+  color: var(--color);
+  border: 1px solid var(--color-gray-700);
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 11px;
+  font-family: monospace;
+
+  &:focus {
+    outline: none;
+    border-color: var(--interaction-color);
+  }
+}
+
+/* Color section */
+.colorSwatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.colorSwatch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  & > .colorPicker {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.colorPicker {
+  cursor: pointer;
+  border: 1px solid var(--color-gray-700);
+  border-radius: 4px;
+  background: none;
+  padding: 1px;
+}
+
+.removeColorBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-gray-500);
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px;
+
+  &:hover {
+    color: var(--color);
+  }
+}
+
+.addColorBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--color-gray-700);
+  border-radius: 4px;
+  color: var(--color);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-gray-500);
+  }
+}
+
+.colorSwatches {
+  & > .addColorBtn {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.midiColorRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  & > .noteInput {
+    width: 44px;
+  }
+}

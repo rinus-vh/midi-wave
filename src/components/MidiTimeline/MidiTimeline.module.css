@@ -1,0 +1,19 @@
+.component {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--size-4);
+  pointer-events: none;
+}
+
+.note {
+  background-color: var(--interaction-color);
+  color: var(--background-color);
+  border-radius: var(--radius-4);
+  padding: 2px var(--size-8);
+  font-size: var(--font-size-12);
+  font-family: var(--font-family-alt);
+  font-weight: var(--font-weight-600);
+  transition-property: opacity, transform;
+  transition-duration: var(--duration-150);
+  transition-timing-function: ease-out;
+}

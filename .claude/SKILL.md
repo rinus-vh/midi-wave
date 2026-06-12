@@ -370,6 +370,25 @@ src/
 
 ---
 
+## Icon component rule
+
+**Always use `<Icon />` from `@6njp/prototype-library` for lucide icons. Never render them directly.**
+
+```jsx
+// ✅ correct
+import { Icon } from '@6njp/prototype-library'
+import { AlertCircle } from 'lucide-react'
+<Icon icon={AlertCircle} layoutClassName={styles.iconLayout} />
+
+// ❌ wrong — direct lucide render
+import { AlertCircle } from 'lucide-react'
+<AlertCircle size={14} />
+```
+
+Apply `layoutClassName` with a class nested inside the parent's CSS rule (per CSS layout conventions in CLAUDE.md).
+
+---
+
 ## What NOT to do
 
 - ❌ `npm install` / `yarn add` — use `pnpm`

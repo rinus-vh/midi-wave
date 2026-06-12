@@ -1,0 +1,33 @@
+.component_root {
+  position: relative;
+  height: 100%;
+  width: 100%;
+
+  & > .timelineLayout {
+    position: absolute;
+    bottom: var(--size-12);
+    left: var(--size-12);
+  }
+}
+
+.component {
+  overflow: hidden;
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  & > .canvas {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.canvas {
+  display: block;
+}
+
+.inverted {
+  filter: invert(1);
+}
