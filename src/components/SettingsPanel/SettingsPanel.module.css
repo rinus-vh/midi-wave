@@ -48,7 +48,7 @@
   color: var(--color-gray-500);
 
   &.midiStatusActive {
-    color: var(--interaction-color);
+    color: var(--dynamic-color);
   }
 }
 
@@ -110,7 +110,7 @@
 
   &:focus {
     outline: none;
-    border-color: var(--interaction-color);
+    border-color: var(--dynamic-color);
   }
 }
 

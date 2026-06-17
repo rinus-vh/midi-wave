@@ -6,7 +6,7 @@
 }
 
 .note {
-  background-color: var(--interaction-color);
+  background-color: var(--dynamic-color);
   color: var(--background-color);
   border-radius: var(--radius-4);
   padding: 2px var(--size-8);
