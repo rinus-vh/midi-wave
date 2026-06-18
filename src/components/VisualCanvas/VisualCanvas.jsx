@@ -70,8 +70,8 @@ export function VisualCanvas({ controls, colorConfig, updateControl, isDark, inv
       const dx = e.clientX - lastMousePosRef.current.x
       const dy = e.clientY - lastMousePosRef.current.y
       const c = controlsRef.current
-      updateControl('xRotation', Math.max(0, Math.min(100, c.xRotation + dy * 0.5)))
-      updateControl('rotation', Math.max(0, Math.min(100, c.rotation + dx * 0.5)))
+      updateControl('xRotation', Math.max(0, Math.min(360, c.xRotation + dy * 1.8)))
+      updateControl('rotation', Math.max(0, Math.min(360, c.rotation + dx * 1.8)))
       lastMousePosRef.current = { x: e.clientX, y: e.clientY }
     }
 

@@ -2,3 +2,9 @@
   width: 32px;
   height: 32px;
 }
+
+.isDragOver {
+  background-color: color-mix(in srgb, var(--dynamic-color) 12%, transparent);
+  outline: 1px dashed var(--dynamic-color);
+  border-radius: var(--radius-4);
+}

@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef } from 'react'
 
 const defaultControls = {
-  rotation: 50,
-  xRotation: 55,
-  zRotation: 50,
+  rotation: 180,
+  xRotation: 198,
+  zRotation: 180,
   scale: 50,
   speed: 0,
   complexity: 0,
@@ -15,14 +15,14 @@ const defaultControls = {
 }
 
 const defaultMidiConfig = {
-  rotation:   { offset: 0, offsetCenter: 50 },
-  xRotation:  { offset: 0, offsetCenter: 50 },
-  zRotation:  { offset: 0, offsetCenter: 50 },
+  rotation:   { offset: 0, offsetCenter: 180 },
+  xRotation:  { offset: 0, offsetCenter: 198 },
+  zRotation:  { offset: 0, offsetCenter: 180 },
   scale:      { offset: 0, offsetCenter: 50 },
   speed:      { offset: 0, offsetCenter: 50 },
   complexity: { offset: 0, offsetCenter: 50 },
   pulse:      { offset: 0, offsetCenter: 50 },
-  resolution: { offset: 0, offsetCenter: 50 },
+  resolution: { offset: 0, offsetCenter: 32 },
   zoom:       { offset: 0, offsetCenter: 50 },
 }
 
@@ -54,9 +54,6 @@ export function useAnimationControls() {
   }, [])
 
   const updateColorConfig = useCallback((config) => {
-    if (config.useMidi !== undefined && config.midiNote === undefined) {
-      config.midiNote = lastMidiNoteRef.current
-    }
     setColorConfig(prev => ({ ...prev, ...config }))
   }, [])
 

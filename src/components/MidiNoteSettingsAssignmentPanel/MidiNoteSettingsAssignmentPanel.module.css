@@ -14,8 +14,9 @@
 .componentNoteRow {
   display: flex;
   align-items: center;
+  min-height: 40px;
   gap: var(--size-8);
-  padding: var(--size-6) var(--size-8);
+  padding: var(--size-8) var(--size-8);
   border-radius: var(--radius-4);
   cursor: grab;
   transition: background-color 150ms ease;
@@ -57,6 +58,9 @@
   display: flex;
   gap: var(--size-4);
   flex: 1;
+  align-self: stretch;
+  align-items: stretch;
+  padding: var(--size-4) 0;
   overflow-x: auto;
   scrollbar-width: none;
 
@@ -68,8 +72,7 @@
 .assignmentBar {
   position: relative;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 28px;
   border-radius: var(--radius-4);
   background-color: var(--surface-color);
   overflow: hidden;
@@ -87,10 +90,11 @@
 }
 
 .barLabel {
-  position: relative;
-  display: block;
+  position: absolute;
+  top: 4px;
+  left: 0;
+  right: 0;
   text-align: center;
-  padding-top: 5px;
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.02em;

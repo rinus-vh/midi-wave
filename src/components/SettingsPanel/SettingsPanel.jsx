@@ -1,4 +1,4 @@
-import { AlertCircle, Music, Settings, Trash2, Zap } from 'lucide-react'
+import { AlertCircle, Music, Settings, Trash2, Usb, Zap } from 'lucide-react'
 import {
   ActionIconButton,
   Checkbox,
@@ -10,6 +10,7 @@ import {
   KnobWithOffset,
   LabelSm,
   LabelUppercaseSm,
+  Modal,
   PanelContainer,
   PanelContainerDivider,
   PanelContainerSettingsRow,
@@ -52,6 +53,8 @@ export function SettingsPanel({
   invertColors,
   onInvertColorsChange,
   bgColor,
+  defaultBgColor,
+  defaultMeshColor,
   onBgColorChange,
   materialSettings,
   lightingSettings,
@@ -63,8 +66,16 @@ export function SettingsPanel({
   onOpenAudioInput,
   onAddMidiAssignment,
   onClearMidiAssignments,
+  bgColorCycleConfig,
+  updateBgColorCycleConfig,
+  requestMidiAccess,
+  midiErrorMessage,
 }) {
   const { getDraggedNote } = useMidiDrag()
+  const [midiErrorModalOpen, setMidiErrorModalOpen] = React.useState(false)
+  React.useEffect(() => { if (midiErrorMessage) setMidiErrorModalOpen(true) }, [midiErrorMessage])
+  const [bgColorPickerOpen, setBgColorPickerOpen] = React.useState(false)
+  const [bgColorDragOver, setBgColorDragOver] = React.useState(false)
   const knobCellsRef = React.useRef({})
   const tooltipHasBeenShownRef = React.useRef(false)
   const [tooltipOpen, setTooltipOpen] = React.useState(false)
@@ -81,7 +92,7 @@ export function SettingsPanel({
     colorConfig.useMidi !== COLOR_CONFIG_DEFAULTS.useMidi ||
     materialSettings.preset !== MATERIAL_DEFAULTS.preset ||
     materialSettings.solid !== MATERIAL_DEFAULTS.solid ||
-    materialSettings.color !== MATERIAL_DEFAULTS.color ||
+    materialSettings.color !== (defaultMeshColor ?? MATERIAL_DEFAULTS.color) ||
     materialSettings.roughness !== MATERIAL_DEFAULTS.roughness ||
     materialSettings.metalness !== MATERIAL_DEFAULTS.metalness ||
     lightingSettings.enabled !== LIGHTING_DEFAULTS.enabled ||
@@ -90,7 +101,7 @@ export function SettingsPanel({
   )
 
   const isSceneDirty = (
-    bgColor !== SCENE_DEFAULTS.bgColor ||
+    bgColor !== (defaultBgColor ?? SCENE_DEFAULTS.bgColor) ||
     invertColors !== SCENE_DEFAULTS.invertColors
   )
 
@@ -100,7 +111,7 @@ export function SettingsPanel({
   }
 
   const handleResetScene = () => {
-    onBgColorChange(SCENE_DEFAULTS.bgColor)
+    onBgColorChange(defaultBgColor ?? SCENE_DEFAULTS.bgColor)
     onInvertColorsChange(SCENE_DEFAULTS.invertColors)
   }
 
@@ -145,6 +156,16 @@ export function SettingsPanel({
         )}
       </div>
 
+      {midiStatus === 'unavailable' && (
+        <GhostButton
+          icon={Usb}
+          label='Connect MIDI device'
+          color='dynamic'
+          onClick={requestMidiAccess}
+          layoutClassName={styles.connectMidiButtonLayout}
+        />
+      )}
+
       <GhostButton
         icon={Music}
         label='MIDI Notes'
@@ -180,7 +201,11 @@ export function SettingsPanel({
                   offsetCenter={cfg.offsetCenter}
                   onOffsetCenterChange={newCenter => updateMidiConfig(key, cfg.offset, newCenter)}
                   min={0}
-                  max={100}
+                  max={
+                    ['rotation', 'xRotation', 'zRotation'].includes(key) ? 360
+                    : key === 'resolution' ? 150
+                    : 100
+                  }
                   {...{ label }}
                 />
                 {assignedNotes > 0 && (
@@ -207,8 +232,6 @@ export function SettingsPanel({
             />
           </PanelContainerSettingsRow>
 
-          <PanelContainerDivider />
-
           <PanelContainerSettingsRow label='Material'>
             <ActionIconButton
               icon={Settings}
@@ -219,8 +242,6 @@ export function SettingsPanel({
             />
           </PanelContainerSettingsRow>
 
-          <PanelContainerDivider />
-
           <PanelContainerSettingsRow label='Lighting'>
             <ActionIconButton
               icon={Settings}
@@ -230,8 +251,6 @@ export function SettingsPanel({
               title='Lighting settings'
             />
           </PanelContainerSettingsRow>
-
-          <PanelContainerDivider />
 
           <PanelContainerSettingsRow label='Audio Input'>
             <ActionIconButton
@@ -250,11 +269,39 @@ export function SettingsPanel({
       {/* ── Scene ───────────────────────────────────────────────────────────────── */}
       <Section title='Scene' dirty={isSceneDirty} onReset={handleResetScene}>
         <PanelContainer>
-          <PanelContainerSettingsRow label='Background'>
+          <PanelContainerSettingsRow
+            label='Background'
+            onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setBgColorDragOver(true) }}
+            onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setBgColorDragOver(false) }}
+            onDrop={e => {
+              e.preventDefault()
+              setBgColorDragOver(false)
+              const note = getDraggedNote()
+              if (note === null) return
+              updateBgColorCycleConfig({
+                midiNote: note,
+                colors: bgColorCycleConfig.colors.length > 0 ? bgColorCycleConfig.colors : [bgColor],
+              })
+              setBgColorPickerOpen(true)
+            }}
+            className={cx(bgColorDragOver && styles.isDragOver)}
+          >
             <ColorInput
               adjustOpacity
               value={bgColor}
               onChange={onBgColorChange}
+              open={bgColorPickerOpen}
+              onOpenChange={setBgColorPickerOpen}
+              colorArrayIsActive={bgColorCycleConfig.midiNote !== null}
+              colorArray={bgColorCycleConfig.colors}
+              onColorArrayChange={(i, hex) => {
+                const updated = [...bgColorCycleConfig.colors]
+                updated[i] = hex
+                updateBgColorCycleConfig({ colors: updated })
+              }}
+              onAddColor={() => updateBgColorCycleConfig({ colors: [...bgColorCycleConfig.colors, bgColor] })}
+              onRemoveColor={i => updateBgColorCycleConfig({ colors: bgColorCycleConfig.colors.filter((_, idx) => idx !== i) })}
+              onClearColorArray={() => { updateBgColorCycleConfig({ midiNote: null, colors: [] }); setBgColorPickerOpen(false) }}
               layoutClassName={styles.colorInputLayout}
             />
           </PanelContainerSettingsRow>
@@ -287,6 +334,24 @@ export function SettingsPanel({
           },
         ]}
       />
+
+      <Modal
+        isOpen={midiErrorModalOpen}
+        onClose={() => setMidiErrorModalOpen(false)}
+        title='MIDI Access Unavailable'
+      >
+        <div className={styles.midiErrorModal}>
+          <LabelSm>Your browser reported:</LabelSm>
+          <div className={styles.midiErrorQuote}>
+            <LabelSm>{midiErrorMessage}</LabelSm>
+          </div>
+          <LabelSm>
+            If no MIDI devices are connected, plug one in and reload the page.
+            If devices are connected, try restarting your browser — Your browser sometimes
+            requires a restart to detect newly connected MIDI hardware.
+          </LabelSm>
+        </div>
+      </Modal>
     </div>
   )
 }

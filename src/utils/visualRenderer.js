@@ -29,8 +29,10 @@ const chromeHeightBrightness = (avgY, waveAmplitude) => {
   return (contrasted + 1) / 2
 }
 
+let _smoothedFrequency = null
+
 const createPlanePoints = (time, controls, frequencyData, audioConfig) => {
-  const gridSize = Math.floor(5 + (controls.resolution / 100) * 37.5)
+  const gridSize = Math.floor(5 + (controls.resolution / 150) * 56.25)
   const planeSize = 1000
   const spacing = planeSize / (gridSize - 1)
   const startX = -planeSize / 2
@@ -42,9 +44,25 @@ const createPlanePoints = (time, controls, frequencyData, audioConfig) => {
 
   const audioEnabled = audioConfig?.enabled && frequencyData && frequencyData.length > 0
   const audioStrength = audioEnabled ? (audioConfig.strength ?? 50) / 100 : 0
+  const peakHeight = audioEnabled ? (audioConfig.peakHeight ?? 50) / 100 : 0
+  const smoothFactor = audioEnabled ? (audioConfig.smooth ?? 30) / 100 : 0
   const frequencyMap = audioConfig?.frequencyMap ?? null
-  const mapSize = audioConfig?.mapSize ?? 5
+  const mapSize = frequencyMap ? Math.round(Math.sqrt(frequencyMap.length)) : 5
   const audioBase = Math.max(waveAmplitude, 200)
+
+  // Smooth frequency data across frames
+  let smoothedData = frequencyData
+  if (audioEnabled && smoothFactor > 0) {
+    if (!_smoothedFrequency || _smoothedFrequency.length !== frequencyData.length) {
+      _smoothedFrequency = new Float32Array(frequencyData)
+    }
+    for (let i = 0; i < frequencyData.length; i++) {
+      _smoothedFrequency[i] = _smoothedFrequency[i] * smoothFactor + frequencyData[i] * (1 - smoothFactor)
+    }
+    smoothedData = _smoothedFrequency
+  } else {
+    _smoothedFrequency = null
+  }
 
   const points = []
   for (let z = 0; z < gridSize; z++) {
@@ -61,14 +79,13 @@ const createPlanePoints = (time, controls, frequencyData, audioConfig) => {
         if (frequencyMap && frequencyMap.length >= mapSize * mapSize) {
           freqZone = sampleHeatmap(frequencyMap, mapSize, normX, normZ)
         } else {
-          // Default: radial — low frequency at center, high at edges
           const dx = normX * 2 - 1
           const dz = normZ * 2 - 1
           freqZone = Math.min(1, Math.sqrt(dx * dx + dz * dz))
         }
-        const binIndex = Math.floor(freqZone * (frequencyData.length - 1))
-        const amplitude = frequencyData[binIndex] / 255
-        y += amplitude * audioStrength * audioBase
+        const binIndex = Math.floor(freqZone * (smoothedData.length - 1))
+        const amplitude = smoothedData[binIndex] / 255
+        y += amplitude * audioStrength * audioBase * (peakHeight * 2)
       }
 
       points.push([xPos, y, zPos])
@@ -100,9 +117,9 @@ const project3DTo2D = (point, width, height, controls) => {
 
   const [x, y, z] = point
 
-  const xRot = (controls.xRotation / 100) * Math.PI * 2
-  const yRot = (controls.rotation / 100) * Math.PI * 2
-  const zRot = (controls.zRotation / 100) * Math.PI * 2
+  const xRot = (controls.xRotation / 360) * Math.PI * 2
+  const yRot = (controls.rotation / 360) * Math.PI * 2
+  const zRot = (controls.zRotation / 360) * Math.PI * 2
 
   const cosX = Math.cos(xRot), sinX = Math.sin(xRot)
   const rotatedY = y * cosX - z * sinX
@@ -249,33 +266,87 @@ export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark 
       }
     }
   } else {
-    // Metalness thickens the line
     const lineWidth = 0.5 + metalness * 1.5
+    const glowOn = wireframeSettings?.glow
+    const wireStyle = wireframeSettings?.style ?? 'grid'
 
-    if (wireframeSettings?.glow) {
+    // Always reset dash state at start of frame to prevent bleed between styles
+    ctx.setLineDash([])
+
+    // When glow is enabled, draw onto a separate canvas so we only need one
+    // shadowBlur composite pass instead of one per stroke call.
+    let lineCtx = ctx
+    let glowCanvas = null
+    if (glowOn) {
+      glowCanvas = document.createElement('canvas')
+      glowCanvas.width = width
+      glowCanvas.height = height
+      lineCtx = glowCanvas.getContext('2d')
+    }
+
+    lineCtx.strokeStyle = baseColor
+    lineCtx.fillStyle = baseColor
+    lineCtx.lineWidth = lineWidth
+
+    if (wireStyle === 'dots') {
+      const dotR = wireframeSettings?.dotSize ?? 4
+      lineCtx.beginPath()
+      for (let z = 0; z < gridSize; z++) {
+        for (let x = 0; x < gridSize; x++) {
+          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+          lineCtx.moveTo(sx + dotR, sy)
+          lineCtx.arc(sx, sy, dotR, 0, Math.PI * 2)
+        }
+      }
+      lineCtx.fill()
+    } else if (wireStyle === 'dashed') {
+      const dash = wireframeSettings?.dashSize ?? 12
+      lineCtx.setLineDash([dash, dash * 0.6])
+
+      for (let z = 0; z < gridSize; z++) {
+        lineCtx.beginPath()
+        for (let x = 0; x < gridSize; x++) {
+          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+          x === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+        }
+        lineCtx.stroke()
+      }
+
+      for (let x = 0; x < gridSize; x++) {
+        lineCtx.beginPath()
+        for (let z = 0; z < gridSize; z++) {
+          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+          z === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+        }
+        lineCtx.stroke()
+      }
+
+      lineCtx.setLineDash([])
+    } else {
+      for (let z = 0; z < gridSize; z++) {
+        lineCtx.beginPath()
+        for (let x = 0; x < gridSize; x++) {
+          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+          x === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+        }
+        lineCtx.stroke()
+      }
+
+      for (let x = 0; x < gridSize; x++) {
+        lineCtx.beginPath()
+        for (let z = 0; z < gridSize; z++) {
+          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+          z === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+        }
+        lineCtx.stroke()
+      }
+    }
+
+    if (glowOn && glowCanvas) {
       ctx.shadowColor = wireframeSettings.glowColor || '#ffffff'
       ctx.shadowBlur = wireframeSettings.glowIntensity * 3
-    }
-
-    ctx.strokeStyle = baseColor
-    ctx.lineWidth = lineWidth
-
-    for (let z = 0; z < gridSize; z++) {
-      ctx.beginPath()
-      for (let x = 0; x < gridSize; x++) {
-        const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-        x === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy)
-      }
-      ctx.stroke()
-    }
-
-    for (let x = 0; x < gridSize; x++) {
-      ctx.beginPath()
-      for (let z = 0; z < gridSize; z++) {
-        const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-        z === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy)
-      }
-      ctx.stroke()
+      ctx.drawImage(glowCanvas, 0, 0)
+      ctx.shadowBlur = 0
     }
   }
 
@@ -285,5 +356,4 @@ export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark 
   }
 
   ctx.globalAlpha = 1
-  ctx.shadowBlur = 0
 }

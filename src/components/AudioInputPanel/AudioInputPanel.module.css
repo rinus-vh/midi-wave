@@ -53,19 +53,26 @@
 .heatmapGrid {
   display: grid;
   grid-template-columns: repeat(var(--map-size), 1fr);
-  gap: 2px;
+  background-color: var(--offset-color);
   border-radius: var(--radius-4);
-  overflow: hidden;
+  padding: var(--size-4);
 }
 
 .heatmapCell {
   aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: ns-resize;
-  transition: filter 80ms ease;
+}
 
-  &:hover {
-    filter: brightness(1.3);
-  }
+.dot {
+  width: calc(var(--dot-scale, 0.5) * 100%);
+  height: calc(var(--dot-scale, 0.5) * 100%);
+  border-radius: var(--radius-circle);
+  background-color: var(--dot-color, currentColor);
+  transition: width 60ms ease, height 60ms ease;
+  flex-shrink: 0;
 }
 
 /* ── Legend ───────────────────────────────────────────────────────────────── */
@@ -86,5 +93,13 @@
   flex: 1;
   height: 6px;
   border-radius: var(--radius-circle);
-  background: linear-gradient(to right, hsl(240, 80%, 45%), hsl(180, 80%, 45%), hsl(60, 80%, 45%), hsl(0, 80%, 45%));
+}
+
+/* ── Audio knob row ───────────────────────────────────────────────────────── */
+
+.audioKnobRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--size-4);
+  padding: var(--size-4) var(--size-8);
 }

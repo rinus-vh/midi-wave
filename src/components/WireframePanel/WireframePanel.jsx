@@ -1,13 +1,6 @@
-import { Minus, Plus } from 'lucide-react'
-import {
-  Checkbox,
-  ColorInput,
-  Icon,
-  PanelContainer,
-  PanelContainerDivider,
-  PanelContainerSettingsRow,
-  Slider,
-} from '@6njp/prototype-library'
+import { Checkbox, ColorInput, Dropdown, PanelContainer, PanelContainerDivider, PanelContainerSettingsRow, Slider } from '@6njp/prototype-library'
+
+import { useMidiDrag } from '@/hooks/useMidiDrag.js'
 
 import styles from './WireframePanel.module.css'
 
@@ -21,65 +14,90 @@ export function WireframePanel({
   wireframeSettings,
   updateWireframe,
 }) {
+  const { getDraggedNote } = useMidiDrag()
+  const [colorPickerOpen, setColorPickerOpen] = React.useState(false)
+  const [isDragOver, setIsDragOver] = React.useState(false)
+
   const colorValueHex = `#${Math.floor((controls.color / 100) * 0xFFFFFF).toString(16).padStart(6, '0')}`
+
+  function handleColorDrop(e) {
+    e.preventDefault()
+    setIsDragOver(false)
+    const note = getDraggedNote()
+    if (note === null) return
+    updateColorConfig({ useMidi: true, midiNote: note })
+    setColorPickerOpen(true)
+  }
+
+  function handleClearColorArray() {
+    updateColorConfig({ useMidi: false, midiNote: null })
+    setColorPickerOpen(false)
+  }
+
+  const styleOptions = [
+    { value: 'grid',   label: 'Grid lines' },
+    { value: 'dots',   label: 'Dots' },
+    { value: 'dashed', label: 'Dashed' },
+  ]
 
   return (
     <PanelContainer>
-      {colorConfig.useMidi
-        ? (
-          <>
-            <div className={styles.colorSwatches}>
-              {colorConfig.colors.map((color, i) => (
-                <div key={i} className={styles.colorSwatch}>
-                  <ColorInput
-                    value={color}
-                    onChange={hex => {
-                      const updated = [...colorConfig.colors]
-                      updated[i] = hex
-                      updateColorConfig({ colors: updated })
-                    }}
-                    layoutClassName={styles.colorInputLayout}
-                  />
-                  {colorConfig.colors.length > 1 && (
-                    <button onClick={() => removeColor(i)} className={styles.removeBtn}>
-                      <Icon icon={Minus} layoutClassName={styles.removeIconLayout} />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button onClick={addColor} className={styles.addBtn}>
-                <Icon icon={Plus} layoutClassName={styles.addIconLayout} />
-              </button>
-            </div>
-            <PanelContainerDivider />
-          </>
-        )
-        : (
-          <PanelContainerSettingsRow label='Color'>
-            <ColorInput
-              value={colorValueHex}
-              onChange={onColorChange}
-              layoutClassName={styles.colorInputLayout}
-            />
-          </PanelContainerSettingsRow>
-        )
-      }
-
-      <PanelContainerSettingsRow label='MIDI cycle'>
-        <Checkbox
-          checked={colorConfig.useMidi}
-          onChange={v => updateColorConfig({ useMidi: v })}
+      <PanelContainerSettingsRow label='Wireframe style'>
+        <Dropdown
+          value={wireframeSettings.style ?? 'grid'}
+          onChange={style => updateWireframe({ style })}
+          options={styleOptions}
         />
-        {colorConfig.useMidi && (
-          <input
-            type='number'
-            min={0}
-            max={127}
-            value={colorConfig.midiNote}
-            onChange={e => updateColorConfig({ midiNote: parseInt(e.target.value, 10) })}
-            className={styles.noteInput}
-          />
-        )}
+      </PanelContainerSettingsRow>
+
+      {wireframeSettings.style === 'dots' && (
+        <Slider
+          value={wireframeSettings.dotSize ?? 4}
+          onChange={dotSize => updateWireframe({ dotSize })}
+          min={1}
+          max={20}
+          step={0.5}
+          label='Dot size'
+        />
+      )}
+
+      {wireframeSettings.style === 'dashed' && (
+        <Slider
+          value={wireframeSettings.dashSize ?? 12}
+          onChange={dashSize => updateWireframe({ dashSize })}
+          min={2}
+          max={60}
+          step={1}
+          label='Dash size'
+        />
+      )}
+
+      <PanelContainerDivider />
+
+      <PanelContainerSettingsRow
+        label='Color'
+        onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDragOver(true) }}
+        onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
+        onDrop={handleColorDrop}
+        className={cx(isDragOver && styles.isDragOver)}
+      >
+        <ColorInput
+          value={colorValueHex}
+          onChange={onColorChange}
+          layoutClassName={styles.colorInputLayout}
+          open={colorPickerOpen}
+          onOpenChange={setColorPickerOpen}
+          colorArrayIsActive={colorConfig.useMidi}
+          colorArray={colorConfig.colors}
+          onColorArrayChange={(i, hex) => {
+            const updated = [...colorConfig.colors]
+            updated[i] = hex
+            updateColorConfig({ colors: updated })
+          }}
+          onAddColor={addColor}
+          onRemoveColor={removeColor}
+          onClearColorArray={handleClearColorArray}
+        />
       </PanelContainerSettingsRow>
 
       <PanelContainerDivider />

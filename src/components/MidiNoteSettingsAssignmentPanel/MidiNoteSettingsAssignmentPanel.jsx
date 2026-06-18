@@ -66,20 +66,18 @@ function NoteRow({ note, isActive, assignments, onUpdateMidiAssignment, onRemove
       <div className={cx(styles.keyIndicator, black && styles.isBlackKey)} />
       <LabelSm layoutClassName={styles.noteNameLayout}>{note.noteName}</LabelSm>
 
-      {assignments.length > 0 && (
-        <div className={styles.assignmentBars}>
-          {assignments.map(({ key, chance }) => (
-            <AssignmentBar
-              key={key}
-              settingKey={key}
-              noteNumber={note.noteNumber}
-              onUpdate={(newChance) => onUpdateMidiAssignment(key, note.noteNumber, newChance)}
-              onRemove={() => onRemoveMidiAssignment(key, note.noteNumber)}
-              {...{ chance }}
-            />
-          ))}
-        </div>
-      )}
+      <div className={styles.assignmentBars}>
+        {assignments.map(({ key, chance }) => (
+          <AssignmentBar
+            key={key}
+            settingKey={key}
+            noteNumber={note.noteNumber}
+            onUpdate={(newChance) => onUpdateMidiAssignment(key, note.noteNumber, newChance)}
+            onRemove={() => onRemoveMidiAssignment(key, note.noteNumber)}
+            {...{ chance }}
+          />
+        ))}
+      </div>
     </div>
   )
 }

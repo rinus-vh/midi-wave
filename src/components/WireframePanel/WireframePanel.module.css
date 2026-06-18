@@ -1,76 +1,10 @@
-.colorSwatches {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--size-6);
-}
-
-.colorSwatch {
-  display: flex;
-  align-items: center;
-  gap: var(--size-4);
-
-  & > .colorInputLayout {
-    width: 32px;
-    height: 32px;
-  }
-}
-
-.removeBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: var(--color-gray-500);
-  cursor: pointer;
-  border-radius: var(--radius-4);
-  padding: 2px;
-
-  &:hover {
-    color: var(--color);
-  }
-
-  & > .removeIconLayout {
-    width: 10px;
-    height: 10px;
-  }
-}
-
-.addBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.colorInputLayout {
   width: 32px;
   height: 32px;
-  background: none;
-  border: 1px solid color-mix(in srgb, var(--color) 18%, transparent);
-  border-radius: var(--radius-4);
-  color: var(--color);
-  cursor: pointer;
-
-  &:hover {
-    border-color: color-mix(in srgb, var(--color) 40%, transparent);
-  }
-
-  & > .addIconLayout {
-    width: 12px;
-    height: 12px;
-  }
 }
 
-.noteInput {
-  width: 44px;
-  background-color: var(--surface-color);
-  color: var(--color);
-  border: 1px solid color-mix(in srgb, var(--color) 18%, transparent);
+.isDragOver {
+  background-color: color-mix(in srgb, var(--dynamic-color) 12%, transparent);
+  outline: 1px dashed var(--dynamic-color);
   border-radius: var(--radius-4);
-  padding: 1px 4px;
-  font-size: 11px;
-  font-family: monospace;
-
-  &:focus {
-    outline: none;
-    border-color: var(--dynamic-color);
-  }
 }

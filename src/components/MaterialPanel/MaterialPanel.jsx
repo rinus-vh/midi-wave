@@ -9,6 +9,7 @@ import {
 } from '@6njp/prototype-library'
 
 import { MATERIAL_DEFAULTS } from '@/constants/defaults.js'
+import { useMidiDrag } from '@/hooks/useMidiDrag.js'
 
 import styles from './MaterialPanel.module.css'
 
@@ -17,7 +18,11 @@ const PRESETS = [
   { value: 'chrome', label: 'Chrome' },
 ]
 
-export function MaterialPanel({ materialSettings, updateMaterial }) {
+export function MaterialPanel({ materialSettings, updateMaterial, solidColorCycleConfig, updateSolidColorCycleConfig }) {
+  const { getDraggedNote } = useMidiDrag()
+  const [solidColorPickerOpen, setSolidColorPickerOpen] = React.useState(false)
+  const [isDragOver, setIsDragOver] = React.useState(false)
+
   const isSolid = materialSettings.solid ?? false
   const isChrome = isSolid && materialSettings.preset === 'chrome'
 
@@ -41,12 +46,41 @@ export function MaterialPanel({ materialSettings, updateMaterial }) {
 
       <PanelContainerDivider />
 
-      <PanelContainerSettingsRow label='Color'>
+      <PanelContainerSettingsRow
+        label='Color'
+        onDragOver={e => { if (isChrome) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDragOver(true) }}
+        onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
+        onDrop={e => {
+          e.preventDefault()
+          setIsDragOver(false)
+          if (isChrome) return
+          const note = getDraggedNote()
+          if (note === null) return
+          updateSolidColorCycleConfig({
+            midiNote: note,
+            colors: solidColorCycleConfig.colors.length > 0 ? solidColorCycleConfig.colors : [materialSettings.color],
+          })
+          setSolidColorPickerOpen(true)
+        }}
+        className={cx(isDragOver && styles.isDragOver)}
+      >
         <ColorInput
           value={isChrome ? MATERIAL_DEFAULTS.color : materialSettings.color}
           onChange={color => updateMaterial({ color })}
           disabled={isChrome}
           layoutClassName={styles.colorInputLayout}
+          open={solidColorPickerOpen}
+          onOpenChange={setSolidColorPickerOpen}
+          colorArrayIsActive={solidColorCycleConfig?.midiNote !== null}
+          colorArray={solidColorCycleConfig?.colors ?? []}
+          onColorArrayChange={(i, hex) => {
+            const updated = [...solidColorCycleConfig.colors]
+            updated[i] = hex
+            updateSolidColorCycleConfig({ colors: updated })
+          }}
+          onAddColor={() => updateSolidColorCycleConfig({ colors: [...solidColorCycleConfig.colors, materialSettings.color] })}
+          onRemoveColor={i => updateSolidColorCycleConfig({ colors: solidColorCycleConfig.colors.filter((_, idx) => idx !== i) })}
+          onClearColorArray={() => { updateSolidColorCycleConfig({ midiNote: null, colors: [] }); setSolidColorPickerOpen(false) }}
         />
       </PanelContainerSettingsRow>
 

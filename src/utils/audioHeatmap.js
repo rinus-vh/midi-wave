@@ -1,4 +1,4 @@
-export const HEATMAP_SIZE = 5
+export const HEATMAP_SIZE = 10
 
 export function radialHeatmap(size = HEATMAP_SIZE) {
   const map = []
@@ -50,8 +50,26 @@ export function sampleHeatmap(heatmap, size, normX, normZ) {
   return v00 * (1 - fx) * (1 - fz) + v10 * fx * (1 - fz) + v01 * (1 - fx) * fz + v11 * fx * fz
 }
 
-// value 0 = bass (blue), 1 = treble (red)
+function lerpHue(h0, h1, t) {
+  const d = ((h1 - h0 + 540) % 360) - 180
+  return (h0 + d * t + 360) % 360
+}
+
+// value 0=bass, 1=treble — thermal heatmap palette (blue→cyan→green→yellow→red)
+const COLOR_STOPS = [
+  [0.00,   5, 85, 48],
+  [0.25,  45, 90, 50],
+  [0.50, 120, 60, 38],
+  [0.75, 190, 75, 42],
+  [1.00, 240, 70, 38],
+]
+
 export function heatmapCellColor(value) {
-  const hue = Math.round((1 - value) * 240)
-  return `hsl(${hue}, 80%, 45%)`
+  const v = Math.max(0, Math.min(1, value))
+  let i = 0
+  while (i < COLOR_STOPS.length - 2 && COLOR_STOPS[i + 1][0] <= v) i++
+  const [t0, h0, s0, l0] = COLOR_STOPS[i]
+  const [t1, h1, s1, l1] = COLOR_STOPS[i + 1]
+  const t = (v - t0) / (t1 - t0)
+  return `hsl(${Math.round(lerpHue(h0, h1, t))}, ${Math.round(s0 + (s1 - s0) * t)}%, ${Math.round(l0 + (l1 - l0) * t)}%)`
 }

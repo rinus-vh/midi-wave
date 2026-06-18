@@ -4,6 +4,8 @@ export const AUDIO_INPUT_DEFAULTS = {
   enabled: false,
   deviceId: null,
   strength: 50,
+  peakHeight: 50,
+  smooth: 30,
   frequencyMap: radialHeatmap(HEATMAP_SIZE),
 }
 
@@ -20,9 +22,9 @@ export const PARAM_CONTROLS = [
 ]
 
 export const PARAM_DEFAULTS = {
-  rotation: 50,
-  xRotation: 55,
-  zRotation: 50,
+  rotation: 180,
+  xRotation: 198,
+  zRotation: 180,
   scale: 50,
   speed: 0,
   complexity: 0,
@@ -48,6 +50,9 @@ export const LIGHTING_DEFAULTS = {
 }
 
 export const WIREFRAME_DEFAULTS = {
+  style: 'grid',
+  dotSize: 4,
+  dashSize: 12,
   glow: false,
   glowIntensity: 5,
   glowColor: '#ffffff',
