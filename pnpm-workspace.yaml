@@ -2,3 +2,5 @@
 # esbuild ships a native binary via its install script, so it must be allowed to build.
 allowBuilds:
   esbuild: true
+
+blockExoticSubdeps: false
