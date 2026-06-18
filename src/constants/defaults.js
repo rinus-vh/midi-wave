@@ -1,3 +1,24 @@
+import { radialHeatmap, HEATMAP_SIZE } from '@/utils/audioHeatmap.js'
+
+export const AUDIO_INPUT_DEFAULTS = {
+  enabled: false,
+  deviceId: null,
+  strength: 50,
+  frequencyMap: radialHeatmap(HEATMAP_SIZE),
+}
+
+export const PARAM_CONTROLS = [
+  { key: 'rotation',   label: 'Y ROT' },
+  { key: 'xRotation',  label: 'X ROT' },
+  { key: 'zRotation',  label: 'Z ROT' },
+  { key: 'scale',      label: 'HEIGHT' },
+  { key: 'speed',      label: 'SPEED' },
+  { key: 'complexity', label: 'FREQ' },
+  { key: 'pulse',      label: 'PULSE' },
+  { key: 'resolution', label: 'RES' },
+  { key: 'zoom',       label: 'ZOOM' },
+]
+
 export const PARAM_DEFAULTS = {
   rotation: 50,
   xRotation: 55,
@@ -40,6 +61,5 @@ export const COLOR_CONFIG_DEFAULTS = {
 
 export const SCENE_DEFAULTS = {
   bgColor: '#000000ff',
-  showTimeline: true,
   invertColors: false,
 }

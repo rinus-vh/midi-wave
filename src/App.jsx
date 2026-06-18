@@ -9,31 +9,43 @@ import {
 } from '@6njp/prototype-library'
 import { getThemeVariables, ThemeContextProvider } from '@6njp/prototype-library/machinery'
 
+import { MidiDragContextProvider } from '@/contexts/MidiDragContext.jsx'
+import { AudioInputPanel } from '@/components/AudioInputPanel/AudioInputPanel.jsx'
 import { LightingPanel } from '@/components/LightingPanel/LightingPanel.jsx'
 import { MaterialPanel } from '@/components/MaterialPanel/MaterialPanel.jsx'
+import { MidiNoteSettingsAssignmentPanel } from '@/components/MidiNoteSettingsAssignmentPanel/MidiNoteSettingsAssignmentPanel.jsx'
 import { SettingsPanel } from '@/components/SettingsPanel/SettingsPanel.jsx'
 import { VisualCanvas } from '@/components/VisualCanvas/VisualCanvas.jsx'
 import { WireframePanel } from '@/components/WireframePanel/WireframePanel.jsx'
-import { LIGHTING_DEFAULTS, MATERIAL_DEFAULTS, SCENE_DEFAULTS, WIREFRAME_DEFAULTS } from '@/constants/defaults.js'
+import { AUDIO_INPUT_DEFAULTS, LIGHTING_DEFAULTS, MATERIAL_DEFAULTS, SCENE_DEFAULTS, WIREFRAME_DEFAULTS } from '@/constants/defaults.js'
 import { useAnimationControls } from '@/hooks/useAnimationControls.js'
+import { useAudioInput } from '@/hooks/useAudioInput.js'
 import { useMidiSetup } from '@/hooks/useMidiSetup.js'
+import { midiNoteToName } from '@/utils/midiNoteNames.js'
 
 import styles from './App.module.css'
 
 export default function App() {
   const [isDark, setIsDark] = React.useState(true)
-  const [midiNotes, setMidiNotes] = React.useState([])
-  const noteIdRef = React.useRef(0)
-  const [showMidiHistory, setShowMidiHistory] = React.useState(SCENE_DEFAULTS.showTimeline)
+  const [trackedNotes, setTrackedNotes] = React.useState([])
+  const [activeNoteNumbers, setActiveNoteNumbers] = React.useState(new Set())
+  const [midiAssignments, setMidiAssignments] = React.useState({})
   const [invertColors, setInvertColors] = React.useState(SCENE_DEFAULTS.invertColors)
-  const [bgColor, setBgColor] = React.useState(SCENE_DEFAULTS.bgColor)
   const [userHasChosenBgColor, setUserHasChosenBgColor] = React.useState(false)
   const [materialSettings, setMaterialSettings] = React.useState(MATERIAL_DEFAULTS)
   const [lightingSettings, setLightingSettings] = React.useState(LIGHTING_DEFAULTS)
   const [wireframeSettings, setWireframeSettings] = React.useState(WIREFRAME_DEFAULTS)
   const [userHasChosenColor, setUserHasChosenColor] = React.useState(false)
+  const [customBgColor, setCustomBgColor] = React.useState(SCENE_DEFAULTS.bgColor)
+  const [audioConfig, setAudioConfig] = React.useState(AUDIO_INPUT_DEFAULTS)
+
+  const bgColor = userHasChosenBgColor ? customBgColor : (isDark ? '#000000ff' : '#f4f4f4ff')
 
   const { midiInputs, selectedInput, handleSelectedInputChange, midiStatus } = useMidiSetup()
+  const { audioDevices, getFrequencyData, permissionError } = useAudioInput({
+    enabled: audioConfig.enabled,
+    deviceId: audioConfig.deviceId,
+  })
 
   const {
     controls,
@@ -49,36 +61,59 @@ export default function App() {
     removeColor,
   } = useAnimationControls()
 
+  // Stable refs for use inside the MIDI event callback
+  const midiAssignmentsRef = React.useRef(midiAssignments)
+  const midiConfigRef = React.useRef(midiConfig)
+  React.useEffect(() => { midiAssignmentsRef.current = midiAssignments }, [midiAssignments])
+  React.useEffect(() => { midiConfigRef.current = midiConfig }, [midiConfig])
+
   React.useEffect(() => {
     if (!selectedInput) return
     const onMessage = (event) => {
       handleMidiMessage(event)
       const [status, data1, data2] = Array.from(event.data)
       if ((status & 0xF0) === 0x90 && data2 > 0) {
-        setMidiNotes(prev => [...prev, { id: noteIdRef.current++, value: data1, timestamp: Date.now() }])
+        // Add to persistent tracked notes if new
+        setTrackedNotes(prev =>
+          prev.some(n => n.noteNumber === data1)
+            ? prev
+            : [...prev, { noteNumber: data1, noteName: midiNoteToName(data1) }]
+        )
+
+        // Light up for 400ms
+        setActiveNoteNumbers(prev => new Set([...prev, data1]))
+        setTimeout(() => {
+          setActiveNoteNumbers(prev => {
+            const next = new Set(prev)
+            next.delete(data1)
+            return next
+          })
+        }, 400)
+
+        // Trigger assigned settings
+        const assignments = midiAssignmentsRef.current
+        const midiCfg = midiConfigRef.current
+        Object.entries(assignments).forEach(([settingKey, noteAssignments]) => {
+          const assignment = noteAssignments.find(a => a.noteNumber === data1)
+          if (!assignment) return
+          if (Math.random() > assignment.chance) return
+          const cfg = midiCfg[settingKey]
+          if (cfg) {
+            const low  = Math.max(0,   cfg.offsetCenter - cfg.offset)
+            const high = Math.min(100, cfg.offsetCenter + cfg.offset)
+            updateControl(settingKey, low + Math.random() * (high - low))
+          }
+        })
       }
     }
     selectedInput.addEventListener('midimessage', onMessage)
     return () => selectedInput.removeEventListener('midimessage', onMessage)
-  }, [selectedInput, handleMidiMessage])
+  }, [selectedInput, handleMidiMessage, updateControl])
 
   React.useEffect(() => {
     if (userHasChosenColor) return
     updateControl('color', isDark ? (0xf4f4f4 / 0xFFFFFF) * 100 : (0x262626 / 0xFFFFFF) * 100)
   }, [isDark, updateControl, userHasChosenColor])
-
-  React.useEffect(() => {
-    if (userHasChosenBgColor) return
-    setBgColor(isDark ? '#000000ff' : '#f4f4f4ff')
-  }, [isDark, userHasChosenBgColor])
-
-  React.useEffect(() => {
-    const id = setInterval(() => {
-      const now = Date.now()
-      setMidiNotes(prev => prev.filter(n => now - n.timestamp < 1000))
-    }, 100)
-    return () => clearInterval(id)
-  }, [])
 
   const handleUserColorChange = React.useCallback((hex) => {
     setUserHasChosenColor(true)
@@ -94,53 +129,104 @@ export default function App() {
     setMaterialSettings(MATERIAL_DEFAULTS)
     setLightingSettings(LIGHTING_DEFAULTS)
     setWireframeSettings(WIREFRAME_DEFAULTS)
-    setShowMidiHistory(SCENE_DEFAULTS.showTimeline)
     setInvertColors(SCENE_DEFAULTS.invertColors)
+    setTrackedNotes([])
+    setActiveNoteNumbers(new Set())
+    setMidiAssignments({})
   }, [isDark, resetControls, resetColorConfig])
 
   const updateMaterial = React.useCallback((patch) => setMaterialSettings(prev => ({ ...prev, ...patch })), [])
   const updateLighting = React.useCallback((patch) => setLightingSettings(prev => ({ ...prev, ...patch })), [])
   const updateWireframe = React.useCallback((patch) => setWireframeSettings(prev => ({ ...prev, ...patch })), [])
+  const updateAudioConfig = React.useCallback((patch) => setAudioConfig(prev => ({ ...prev, ...patch })), [])
+
+  const updateMidiAssignment = React.useCallback((settingKey, noteNumber, chance) => {
+    setMidiAssignments(prev => {
+      const existing = prev[settingKey] ?? []
+      const already = existing.find(a => a.noteNumber === noteNumber)
+      const updated = already
+        ? existing.map(a => a.noteNumber === noteNumber ? { ...a, chance } : a)
+        : [...existing, { noteNumber, chance }]
+      return { ...prev, [settingKey]: updated }
+    })
+  }, [])
+
+  const addMidiAssignment = React.useCallback((settingKey, noteNumber) => {
+    setMidiAssignments(prev => {
+      const existing = prev[settingKey] ?? []
+      if (existing.some(a => a.noteNumber === noteNumber)) return prev
+      return { ...prev, [settingKey]: [...existing, { noteNumber, chance: 1 }] }
+    })
+  }, [])
+
+  const clearMidiAssignments = React.useCallback((settingKey) => {
+    setMidiAssignments(prev => {
+      const next = { ...prev }
+      delete next[settingKey]
+      return next
+    })
+  }, [])
+
+  const removeMidiAssignment = React.useCallback((settingKey, noteNumber) => {
+    setMidiAssignments(prev => {
+      const updated = (prev[settingKey] ?? []).filter(a => a.noteNumber !== noteNumber)
+      const next = { ...prev }
+      if (updated.length === 0) delete next[settingKey]
+      else next[settingKey] = updated
+      return next
+    })
+  }, [])
 
   const themeVariables = getThemeVariables(isDark ? 'dark' : 'light')
 
   return (
     <ThemeContextProvider theme={isDark ? 'dark' : 'light'}>
       <MinimizedPanelsMenuContextProvider>
-        <AppPanels
-          onToggleTheme={() => setIsDark(d => !d)}
-          onShowMidiHistoryChange={setShowMidiHistory}
-          onInvertColorsChange={setInvertColors}
-          onBgColorChange={(color) => { setUserHasChosenBgColor(true); setBgColor(color) }}
-          onColorChange={handleUserColorChange}
-          onReset={handleReset}
-          onSelectedInputChange={handleSelectedInputChange}
-          {...{
-            isDark,
-            themeVariables,
-            midiNotes,
-            showMidiHistory,
-            invertColors,
-            bgColor,
-            materialSettings,
-            lightingSettings,
-            wireframeSettings,
-            updateMaterial,
-            updateLighting,
-            updateWireframe,
-            controls,
-            updateControl,
-            midiConfig,
-            updateMidiConfig,
-            colorConfig,
-            updateColorConfig,
-            addColor,
-            removeColor,
-            midiStatus,
-            midiInputs,
-            selectedInput,
-          }}
-        />
+        <MidiDragContextProvider>
+          <AppPanels
+            onToggleTheme={() => setIsDark(d => !d)}
+            onInvertColorsChange={setInvertColors}
+            onBgColorChange={(color) => { setUserHasChosenBgColor(true); setCustomBgColor(color) }}
+            onColorChange={handleUserColorChange}
+            onReset={handleReset}
+            onSelectedInputChange={handleSelectedInputChange}
+            onAddMidiAssignment={addMidiAssignment}
+            onUpdateMidiAssignment={updateMidiAssignment}
+            onClearMidiAssignments={clearMidiAssignments}
+            onRemoveMidiAssignment={removeMidiAssignment}
+            {...{
+              isDark,
+              themeVariables,
+              trackedNotes,
+              activeNoteNumbers,
+              midiAssignments,
+              invertColors,
+              bgColor,
+              materialSettings,
+              lightingSettings,
+              wireframeSettings,
+              updateMaterial,
+              updateLighting,
+              updateWireframe,
+              controls,
+              updateControl,
+              midiConfig,
+              updateMidiConfig,
+              colorConfig,
+              updateColorConfig,
+              addColor,
+              removeColor,
+              midiStatus,
+              midiInputs,
+              selectedInput,
+              audioConfig,
+              updateAudioConfig,
+              audioDevices,
+              getFrequencyData,
+              permissionError,
+            }}
+          />
+        </MidiDragContextProvider>
       </MinimizedPanelsMenuContextProvider>
     </ThemeContextProvider>
   )
@@ -149,8 +235,9 @@ export default function App() {
 function AppPanels({
   isDark,
   themeVariables,
-  midiNotes,
-  showMidiHistory,
+  trackedNotes,
+  activeNoteNumbers,
+  midiAssignments,
   invertColors,
   bgColor,
   materialSettings,
@@ -171,18 +258,28 @@ function AppPanels({
   midiInputs,
   selectedInput,
   onToggleTheme,
-  onShowMidiHistoryChange,
   onInvertColorsChange,
   onBgColorChange,
   onColorChange,
   onReset,
   onSelectedInputChange,
+  onAddMidiAssignment,
+  onUpdateMidiAssignment,
+  onClearMidiAssignments,
+  onRemoveMidiAssignment,
+  audioConfig,
+  updateAudioConfig,
+  audioDevices,
+  getFrequencyData,
+  permissionError,
 }) {
-  const settingsPanel  = usePanelManager('settings',  'Settings',  { defaultVisible: true })
-  const outputPanel    = usePanelManager('output',    'Output',    { defaultVisible: true })
-  const wireframePanel = usePanelManager('wireframe', 'Wireframe', { defaultVisible: false })
-  const materialPanel  = usePanelManager('material',  'Material',  { defaultVisible: false })
-  const lightingPanel  = usePanelManager('lighting',  'Lighting',  { defaultVisible: false })
+  const settingsPanel   = usePanelManager('settings',    'Settings',     { defaultVisible: true })
+  const outputPanel     = usePanelManager('output',      'Output',       { defaultVisible: true })
+  const midiNotesPanel  = usePanelManager('midiNotes',   'MIDI Notes',   { defaultVisible: false })
+  const audioPanel      = usePanelManager('audioInput',  'Audio Input',  { defaultVisible: false })
+  const wireframePanel  = usePanelManager('wireframe',   'Wireframe',    { defaultVisible: false })
+  const materialPanel   = usePanelManager('material',    'Material',     { defaultVisible: false })
+  const lightingPanel   = usePanelManager('lighting',    'Lighting',     { defaultVisible: false })
 
   return (
     <main style={themeVariables} className={styles.componentPanels}>
@@ -194,51 +291,102 @@ function AppPanels({
       />
 
       <Grid layoutClassName={styles.gridLayout}>
-        {settingsPanel.visible && <Panel title='Settings' minWidth={4} minHeight={9} isMinimizable onMinimize={settingsPanel.minimize}>
-          <SettingsPanel
-            onOpenWireframe={wireframePanel.open}
-            onOpenMaterial={materialPanel.open}
-            onOpenLighting={lightingPanel.open}
-            {...{
-              controls,
-              updateControl,
-              midiConfig,
-              updateMidiConfig,
-              colorConfig,
-              midiStatus,
-              midiInputs,
-              selectedInput,
-              showMidiHistory,
-              invertColors,
-              bgColor,
-              materialSettings,
-              lightingSettings,
-              onSelectedInputChange,
-              onShowMidiHistoryChange,
-              onInvertColorsChange,
-              onBgColorChange,
-              onReset,
-            }}
-          />
-        </Panel>}
+        {settingsPanel.visible && (
+          <Panel
+            isMinimizable
+            title='Settings'
+            minWidth={4}
+            minHeight={9}
+            onMinimize={settingsPanel.minimize}
+          >
+            <SettingsPanel
+              onOpenWireframe={wireframePanel.open}
+              onOpenMaterial={materialPanel.open}
+              onOpenLighting={lightingPanel.open}
+              onOpenMidiNotes={midiNotesPanel.open}
+              onOpenAudioInput={audioPanel.open}
+              {...{
+                controls,
+                updateControl,
+                midiConfig,
+                updateMidiConfig,
+                colorConfig,
+                midiStatus,
+                midiInputs,
+                selectedInput,
+                invertColors,
+                bgColor,
+                materialSettings,
+                lightingSettings,
+                midiAssignments,
+                onSelectedInputChange,
+                onInvertColorsChange,
+                onBgColorChange,
+                onReset,
+                onAddMidiAssignment,
+                onClearMidiAssignments,
+              }}
+            />
+          </Panel>
+        )}
 
-        {outputPanel.visible && <Panel title='Output' minWidth={12} minHeight={9} isMinimizable onMinimize={outputPanel.minimize}>
-          <VisualCanvas
-            showTimeline={showMidiHistory}
-            {...{
-              controls,
-              colorConfig,
-              updateControl,
-              isDark,
-              midiNotes,
-              invertColors,
-              bgColor,
-              materialSettings,
-              lightingSettings,
-              wireframeSettings,
-            }}
-          />
-        </Panel>}
+        {outputPanel.visible && (
+          <Panel
+            isMinimizable
+            title='Output'
+            minWidth={12}
+            minHeight={9}
+            onMinimize={outputPanel.minimize}
+          >
+            <VisualCanvas
+              {...{
+                controls,
+                colorConfig,
+                updateControl,
+                isDark,
+                invertColors,
+                bgColor,
+                materialSettings,
+                lightingSettings,
+                wireframeSettings,
+                getFrequencyData,
+                audioConfig,
+              }}
+            />
+          </Panel>
+        )}
+
+        {midiNotesPanel.visible && (
+          <Panel
+            isCloseable
+            isMinimizable
+            title='MIDI Notes'
+            minWidth={4}
+            minHeight={4}
+            onClose={midiNotesPanel.close}
+            onMinimize={midiNotesPanel.minimize}
+          >
+            <MidiNoteSettingsAssignmentPanel
+              {...{ trackedNotes, activeNoteNumbers, midiAssignments, onUpdateMidiAssignment, onRemoveMidiAssignment }}
+            />
+          </Panel>
+        )}
+
+        {audioPanel.visible && (
+          <Panel
+            isCloseable
+            isMinimizable
+            title='Audio Input'
+            minWidth={4}
+            minHeight={4}
+            onClose={audioPanel.close}
+            onMinimize={audioPanel.minimize}
+          >
+            <AudioInputPanel
+              {...{ audioConfig, updateAudioConfig, audioDevices, permissionError }}
+            />
+          </Panel>
+        )}
 
         {wireframePanel.visible && (
           <Panel

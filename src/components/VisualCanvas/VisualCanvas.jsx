@@ -1,4 +1,3 @@
-import { MidiTimeline } from '@/components/MidiTimeline/MidiTimeline.jsx'
 import { drawWireframe } from '@/utils/visualRenderer.js'
 
 import styles from './VisualCanvas.module.css'
@@ -13,7 +12,7 @@ const hexToRgba = (hex) => {
   return `rgba(${r},${g},${b},${a})`
 }
 
-export function VisualCanvas({ controls, colorConfig, updateControl, isDark, midiNotes, showTimeline, invertColors, bgColor, materialSettings, lightingSettings, wireframeSettings }) {
+export function VisualCanvas({ controls, colorConfig, updateControl, isDark, invertColors, bgColor, materialSettings, lightingSettings, wireframeSettings, getFrequencyData, audioConfig }) {
   const canvasRef = React.useRef(null)
   const animationRef = React.useRef(null)
   const isDraggingRef = React.useRef(false)
@@ -24,6 +23,8 @@ export function VisualCanvas({ controls, colorConfig, updateControl, isDark, mid
   const lightingRef = React.useRef(lightingSettings)
   const wireframeRef = React.useRef(wireframeSettings)
   const bgColorRef = React.useRef(bgColor)
+  const getFrequencyDataRef = React.useRef(getFrequencyData)
+  const audioConfigRef = React.useRef(audioConfig)
 
   React.useEffect(() => { controlsRef.current = controls }, [controls])
   React.useEffect(() => { isDarkRef.current = isDark }, [isDark])
@@ -31,6 +32,8 @@ export function VisualCanvas({ controls, colorConfig, updateControl, isDark, mid
   React.useEffect(() => { lightingRef.current = lightingSettings }, [lightingSettings])
   React.useEffect(() => { wireframeRef.current = wireframeSettings }, [wireframeSettings])
   React.useEffect(() => { bgColorRef.current = bgColor }, [bgColor])
+  React.useEffect(() => { getFrequencyDataRef.current = getFrequencyData }, [getFrequencyData])
+  React.useEffect(() => { audioConfigRef.current = audioConfig }, [audioConfig])
 
   React.useEffect(() => {
     const canvas = canvasRef.current
@@ -51,7 +54,8 @@ export function VisualCanvas({ controls, colorConfig, updateControl, isDark, mid
     ro.observe(canvas.parentElement)
 
     const animate = () => {
-      drawWireframe(ctx, canvas.width, canvas.height, controlsRef.current, colorConfig, isDarkRef.current, materialRef.current, lightingRef.current, bgColorRef.current, wireframeRef.current)
+      const freqData = getFrequencyDataRef.current?.()
+      drawWireframe(ctx, canvas.width, canvas.height, controlsRef.current, colorConfig, isDarkRef.current, materialRef.current, lightingRef.current, bgColorRef.current, wireframeRef.current, freqData, audioConfigRef.current)
       animationRef.current = requestAnimationFrame(animate)
     }
     animationRef.current = requestAnimationFrame(animate)
@@ -106,7 +110,6 @@ export function VisualCanvas({ controls, colorConfig, updateControl, isDark, mid
         }}
         className={styles.canvas}
       />
-      {showTimeline && <MidiTimeline {...{ midiNotes }} layoutClassName={styles.timelineLayout} />}
     </div>
   )
 }

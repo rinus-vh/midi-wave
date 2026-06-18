@@ -15,15 +15,15 @@ const defaultControls = {
 }
 
 const defaultMidiConfig = {
-  rotation:   { enabled: false, note: 0, offset: 0, offsetCenter: 50 },
-  xRotation:  { enabled: false, note: 0, offset: 0, offsetCenter: 50 },
-  zRotation:  { enabled: false, note: 0, offset: 0, offsetCenter: 50 },
-  scale:      { enabled: false, note: 0, offset: 0, offsetCenter: 50 },
-  speed:      { enabled: false, note: 0, offset: 0, offsetCenter: 50 },
-  complexity: { enabled: false, note: 0, offset: 0, offsetCenter: 50 },
-  pulse:      { enabled: false, note: 0, offset: 0, offsetCenter: 50 },
-  resolution: { enabled: false, note: 0, offset: 0, offsetCenter: 50 },
-  zoom:       { enabled: false, note: 0, offset: 0, offsetCenter: 50 },
+  rotation:   { offset: 0, offsetCenter: 50 },
+  xRotation:  { offset: 0, offsetCenter: 50 },
+  zRotation:  { offset: 0, offsetCenter: 50 },
+  scale:      { offset: 0, offsetCenter: 50 },
+  speed:      { offset: 0, offsetCenter: 50 },
+  complexity: { offset: 0, offsetCenter: 50 },
+  pulse:      { offset: 0, offsetCenter: 50 },
+  resolution: { offset: 0, offsetCenter: 50 },
+  zoom:       { offset: 0, offsetCenter: 50 },
 }
 
 const defaultColorConfig = {
@@ -36,20 +36,17 @@ export function useAnimationControls() {
   const [controls, setControls] = useState(defaultControls)
   const [midiConfig, setMidiConfig] = useState(defaultMidiConfig)
   const [colorConfig, setColorConfig] = useState(defaultColorConfig)
-  const [currentColorIndex, setCurrentColorIndex] = useState(0)
+  const [_currentColorIndex, setCurrentColorIndex] = useState(0)
   const lastMidiNoteRef = useRef(0)
 
   const updateControl = useCallback((name, value) => {
     setControls(prev => ({ ...prev, [name]: value }))
   }, [])
 
-  const updateMidiConfig = useCallback((control, enabled, note, offset, offsetCenter) => {
+  const updateMidiConfig = useCallback((control, offset, offsetCenter) => {
     setMidiConfig(prev => ({
       ...prev,
       [control]: {
-        ...prev[control],
-        enabled,
-        note: note ?? lastMidiNoteRef.current,
         offset: offset ?? prev[control].offset,
         offsetCenter: offsetCenter ?? prev[control].offsetCenter,
       },
@@ -91,17 +88,6 @@ export function useAnimationControls() {
           })
         }
         return colorCfg
-      })
-
-      setMidiConfig(cfg => {
-        Object.entries(cfg).forEach(([control, config]) => {
-          if (config.enabled && data1 === config.note) {
-            const low  = Math.max(0,   config.offsetCenter - config.offset)
-            const high = Math.min(100, config.offsetCenter + config.offset)
-            updateControl(control, low + Math.random() * (high - low))
-          }
-        })
-        return cfg
       })
     }
   }, [updateControl])

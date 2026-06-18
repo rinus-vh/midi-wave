@@ -1,9 +1,11 @@
-import { AlertCircle, Settings, Zap } from 'lucide-react'
+import { AlertCircle, Music, Settings, Trash2, Zap } from 'lucide-react'
 import {
   ActionIconButton,
   Checkbox,
   ColorInput,
+  ContextMenu,
   Dropdown,
+  GhostButton,
   Icon,
   KnobWithOffset,
   LabelSm,
@@ -19,23 +21,13 @@ import {
   COLOR_CONFIG_DEFAULTS,
   LIGHTING_DEFAULTS,
   MATERIAL_DEFAULTS,
+  PARAM_CONTROLS,
   PARAM_DEFAULTS,
   SCENE_DEFAULTS,
 } from '@/constants/defaults.js'
+import { useMidiDrag } from '@/hooks/useMidiDrag.js'
 
 import styles from './SettingsPanel.module.css'
-
-const PARAM_CONTROLS = [
-  { key: 'rotation',   label: 'Y ROT' },
-  { key: 'xRotation',  label: 'X ROT' },
-  { key: 'zRotation',  label: 'Z ROT' },
-  { key: 'scale',      label: 'HEIGHT' },
-  { key: 'speed',      label: 'SPEED' },
-  { key: 'complexity', label: 'FREQ' },
-  { key: 'pulse',      label: 'PULSE' },
-  { key: 'resolution', label: 'RES' },
-  { key: 'zoom',       label: 'ZOOM' },
-]
 
 function Section({ title, children, dirty = false, onReset }) {
   return (
@@ -57,22 +49,28 @@ export function SettingsPanel({
   midiInputs,
   selectedInput,
   onSelectedInputChange,
-  showMidiHistory,
-  onShowMidiHistoryChange,
   invertColors,
   onInvertColorsChange,
   bgColor,
   onBgColorChange,
   materialSettings,
   lightingSettings,
+  midiAssignments,
   onOpenWireframe,
   onOpenMaterial,
   onOpenLighting,
+  onOpenMidiNotes,
+  onOpenAudioInput,
+  onAddMidiAssignment,
+  onClearMidiAssignments,
 }) {
+  const { getDraggedNote } = useMidiDrag()
   const knobCellsRef = React.useRef({})
   const tooltipHasBeenShownRef = React.useRef(false)
   const [tooltipOpen, setTooltipOpen] = React.useState(false)
   const [tooltipAnchor, setTooltipAnchor] = React.useState(null)
+  const [dragOverKey, setDragOverKey] = React.useState(null)
+  const [contextMenu, setContextMenu] = React.useState({ open: false, x: 0, y: 0, key: null })
 
   const deviceOptions = midiInputs.map(input => ({ value: input.id, label: input.name }))
 
@@ -93,7 +91,6 @@ export function SettingsPanel({
 
   const isSceneDirty = (
     bgColor !== SCENE_DEFAULTS.bgColor ||
-    showMidiHistory !== SCENE_DEFAULTS.showTimeline ||
     invertColors !== SCENE_DEFAULTS.invertColors
   )
 
@@ -104,13 +101,13 @@ export function SettingsPanel({
 
   const handleResetScene = () => {
     onBgColorChange(SCENE_DEFAULTS.bgColor)
-    onShowMidiHistoryChange(SCENE_DEFAULTS.showTimeline)
     onInvertColorsChange(SCENE_DEFAULTS.invertColors)
   }
 
-  const handleMidiEnable = (key, enabled) => {
-    updateMidiConfig(key, enabled)
-    if (enabled && !tooltipHasBeenShownRef.current) {
+  const handleOffsetChange = (key, newOffset) => {
+    const cfg = midiConfig[key]
+    updateMidiConfig(key, newOffset, cfg.offsetCenter)
+    if (!tooltipHasBeenShownRef.current) {
       tooltipHasBeenShownRef.current = true
       setTooltipAnchor(knobCellsRef.current[key] ?? null)
       setTooltipOpen(true)
@@ -148,11 +145,13 @@ export function SettingsPanel({
         )}
       </div>
 
-      <PanelContainer>
-        <PanelContainerSettingsRow label='MIDI notes history'>
-          <Checkbox checked={showMidiHistory} onChange={onShowMidiHistoryChange} />
-        </PanelContainerSettingsRow>
-      </PanelContainer>
+      <GhostButton
+        icon={Music}
+        label='MIDI Notes'
+        color='white'
+        onClick={onOpenMidiNotes}
+        layoutClassName={styles.midiNotesButtonLayout}
+      />
 
       <PanelContainerDivider />
 
@@ -161,40 +160,32 @@ export function SettingsPanel({
         <div className={styles.knobGrid}>
           {PARAM_CONTROLS.map(({ key, label }) => {
             const cfg = midiConfig[key]
+            const assignedNotes = (midiAssignments[key] ?? []).length
 
             return (
               <div
                 key={key}
                 ref={el => { knobCellsRef.current[key] = el }}
-                className={styles.knobCell}
+                onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setDragOverKey(key) }}
+                onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverKey(null) }}
+                onDrop={e => { e.preventDefault(); setDragOverKey(null); const n = getDraggedNote(); if (n !== null) onAddMidiAssignment(key, n) }}
+                onContextMenu={e => { e.preventDefault(); setContextMenu({ open: true, x: e.clientX, y: e.clientY, key }) }}
+                className={cx(styles.knobCell, assignedNotes > 0 && styles.hasAssignment, dragOverKey === key && styles.isDragOver, contextMenu.open && contextMenu.key === key && styles.isContextActive)}
               >
                 <KnobWithOffset
                   value={Math.round(controls[key])}
                   onChange={v => updateControl(key, v)}
                   offset={cfg.offset}
-                  onOffsetChange={newOffset => updateMidiConfig(key, cfg.enabled, cfg.note, newOffset, cfg.offsetCenter)}
+                  onOffsetChange={newOffset => handleOffsetChange(key, newOffset)}
                   offsetCenter={cfg.offsetCenter}
-                  onOffsetCenterChange={newCenter => updateMidiConfig(key, cfg.enabled, cfg.note, cfg.offset, newCenter)}
+                  onOffsetCenterChange={newCenter => updateMidiConfig(key, cfg.offset, newCenter)}
                   min={0}
                   max={100}
                   {...{ label }}
                 />
-                <div className={styles.midiRow}>
-                  <Checkbox
-                    checked={cfg?.enabled ?? false}
-                    onChange={enabled => handleMidiEnable(key, enabled)}
-                  />
-                  {cfg?.enabled && (
-                    <input
-                      type='number'
-                      min={0}
-                      max={127}
-                      value={cfg.note}
-                      onChange={e => updateMidiConfig(key, true, parseInt(e.target.value, 10), cfg.offset)}
-                      className={styles.noteInput}
-                    />
-                  )}
-                </div>
+                {assignedNotes > 0 && (
+                  <div title={`${assignedNotes} MIDI note${assignedNotes > 1 ? 's' : ''} assigned`} className={styles.assignmentDot} />
+                )}
               </div>
             )
           })}
@@ -203,8 +194,8 @@ export function SettingsPanel({
 
       <PanelContainerDivider />
 
-      {/* ── Visual ──────────────────────────────────────────────────────────────── */}
-      <Section title='Visual' dirty={isVisualDirty} {...{ onReset }}>
+      {/* ── Plane settings ──────────────────────────────────────────────────────── */}
+      <Section title='Plane settings' dirty={isVisualDirty} {...{ onReset }}>
         <PanelContainer>
           <PanelContainerSettingsRow label='Wireframe'>
             <ActionIconButton
@@ -216,6 +207,8 @@ export function SettingsPanel({
             />
           </PanelContainerSettingsRow>
 
+          <PanelContainerDivider />
+
           <PanelContainerSettingsRow label='Material'>
             <ActionIconButton
               icon={Settings}
@@ -226,6 +219,8 @@ export function SettingsPanel({
             />
           </PanelContainerSettingsRow>
 
+          <PanelContainerDivider />
+
           <PanelContainerSettingsRow label='Lighting'>
             <ActionIconButton
               icon={Settings}
@@ -233,6 +228,18 @@ export function SettingsPanel({
               style='outline'
               onClick={onOpenLighting}
               title='Lighting settings'
+            />
+          </PanelContainerSettingsRow>
+
+          <PanelContainerDivider />
+
+          <PanelContainerSettingsRow label='Audio Input'>
+            <ActionIconButton
+              icon={Settings}
+              size={20}
+              style='outline'
+              onClick={onOpenAudioInput}
+              title='Audio input settings'
             />
           </PanelContainerSettingsRow>
         </PanelContainer>
@@ -265,6 +272,21 @@ export function SettingsPanel({
       >
         Hold ⌘ Cmd (or Ctrl on Windows) and drag a knob to set its MIDI offset range.
       </Tooltip>
+
+      <ContextMenu
+        isOpen={contextMenu.open}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        onClose={() => setContextMenu(prev => ({ ...prev, open: false }))}
+        items={[
+          {
+            icon: <Trash2 size={14} />,
+            label: 'Clear MIDI assignments',
+            onClick: () => onClearMidiAssignments(contextMenu.key),
+            disabled: !contextMenu.key || !(midiAssignments[contextMenu.key]?.length > 0),
+          },
+        ]}
+      />
     </div>
   )
 }

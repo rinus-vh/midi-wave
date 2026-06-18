@@ -29,7 +29,7 @@ const chromeHeightBrightness = (avgY, waveAmplitude) => {
   return (contrasted + 1) / 2
 }
 
-const createPlanePoints = (time, controls) => {
+const createPlanePoints = (time, controls, frequencyData, audioConfig) => {
   const gridSize = Math.floor(5 + (controls.resolution / 100) * 37.5)
   const planeSize = 1000
   const spacing = planeSize / (gridSize - 1)
@@ -40,6 +40,12 @@ const createPlanePoints = (time, controls) => {
   const waveSpeed = (controls.speed / 100) * 2
   const pulseIntensity = controls.pulse / 100
 
+  const audioEnabled = audioConfig?.enabled && frequencyData && frequencyData.length > 0
+  const audioStrength = audioEnabled ? (audioConfig.strength ?? 50) / 100 : 0
+  const frequencyMap = audioConfig?.frequencyMap ?? null
+  const mapSize = audioConfig?.mapSize ?? 5
+  const audioBase = Math.max(waveAmplitude, 200)
+
   const points = []
   for (let z = 0; z < gridSize; z++) {
     for (let x = 0; x < gridSize; x++) {
@@ -47,10 +53,44 @@ const createPlanePoints = (time, controls) => {
       const zPos = startZ + z * spacing
       let y = Math.sin(xPos * waveFrequency + zPos * waveFrequency - time * waveSpeed) * waveAmplitude
       y *= 1 + Math.sin(time * pulseIntensity * 10) * 0.5
+
+      if (audioEnabled) {
+        const normX = x / (gridSize - 1)
+        const normZ = z / (gridSize - 1)
+        let freqZone
+        if (frequencyMap && frequencyMap.length >= mapSize * mapSize) {
+          freqZone = sampleHeatmap(frequencyMap, mapSize, normX, normZ)
+        } else {
+          // Default: radial — low frequency at center, high at edges
+          const dx = normX * 2 - 1
+          const dz = normZ * 2 - 1
+          freqZone = Math.min(1, Math.sqrt(dx * dx + dz * dz))
+        }
+        const binIndex = Math.floor(freqZone * (frequencyData.length - 1))
+        const amplitude = frequencyData[binIndex] / 255
+        y += amplitude * audioStrength * audioBase
+      }
+
       points.push([xPos, y, zPos])
     }
   }
   return { points, gridSize }
+}
+
+function sampleHeatmap(heatmap, size, normX, normZ) {
+  const x = normX * (size - 1)
+  const z = normZ * (size - 1)
+  const x0 = Math.floor(x)
+  const x1 = Math.min(size - 1, x0 + 1)
+  const z0 = Math.floor(z)
+  const z1 = Math.min(size - 1, z0 + 1)
+  const fx = x - x0
+  const fz = z - z0
+  const v00 = heatmap[z0 * size + x0] ?? 0
+  const v10 = heatmap[z0 * size + x1] ?? 0
+  const v01 = heatmap[z1 * size + x0] ?? 0
+  const v11 = heatmap[z1 * size + x1] ?? 0
+  return v00 * (1 - fx) * (1 - fz) + v10 * fx * (1 - fz) + v01 * (1 - fx) * fz + v11 * fx * fz
 }
 
 const project3DTo2D = (point, width, height, controls) => {
@@ -80,7 +120,7 @@ const project3DTo2D = (point, width, height, controls) => {
   return [finalX * scale + width / 2, finalY * scale + height / 2, rotatedY]
 }
 
-export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark = true, materialSettings, lightingSettings, bgColor = null, wireframeSettings = null) => {
+export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark = true, materialSettings, lightingSettings, bgColor = null, wireframeSettings = null, frequencyData = null, audioConfig = null) => {
   const roughness = materialSettings?.roughness ?? 0.5
   const metalness = materialSettings?.metalness ?? 0.5
   const isSolid = materialSettings?.solid ?? false
@@ -98,7 +138,7 @@ export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark 
 
   const time = Date.now() / 1000
   const waveAmplitude = (controls.scale / 100) * 400
-  const { points, gridSize } = createPlanePoints(time, controls)
+  const { points, gridSize } = createPlanePoints(time, controls, frequencyData, audioConfig)
 
   const baseColor = getWireColor(controls.color, colorConfig, materialSettings, isSolid)
 

@@ -1,0 +1,112 @@
+.component_root {
+  display: flex;
+  flex-direction: column;
+  padding: var(--size-8);
+  gap: var(--size-4);
+}
+
+.emptyState {
+  padding: var(--size-16) var(--size-8);
+  text-align: center;
+  opacity: 0.5;
+}
+
+.componentNoteRow {
+  display: flex;
+  align-items: center;
+  gap: var(--size-8);
+  padding: var(--size-6) var(--size-8);
+  border-radius: var(--radius-4);
+  cursor: grab;
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background-color: var(--surface-color);
+  }
+
+  &[data-active] {
+    background-color: color-mix(in srgb, var(--dynamic-color) 25%, transparent);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  & > .noteNameLayout {
+    min-width: 28px;
+    flex-shrink: 0;
+  }
+}
+
+.keyIndicator {
+  flex-shrink: 0;
+  width: 10px;
+  height: 20px;
+  border-radius: var(--radius-4);
+  background-color: var(--color-white);
+  border: 1px solid color-mix(in srgb, var(--color) 20%, transparent);
+
+  &.isBlackKey {
+    height: 14px;
+    background-color: var(--color-black);
+    border-color: color-mix(in srgb, var(--color) 40%, transparent);
+  }
+}
+
+.assignmentBars {
+  display: flex;
+  gap: var(--size-4);
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.assignmentBar {
+  position: relative;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-4);
+  background-color: var(--surface-color);
+  overflow: hidden;
+  cursor: ns-resize;
+  user-select: none;
+}
+
+.barFill {
+  position: absolute;
+  inset: 0;
+  transform-origin: bottom;
+  transform: scaleY(var(--bar-fill, 1));
+  background-color: var(--dynamic-color);
+  opacity: 0.7;
+}
+
+.barLabel {
+  position: relative;
+  display: block;
+  text-align: center;
+  padding-top: 5px;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color);
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.barPercent {
+  position: absolute;
+  bottom: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 8px;
+  color: var(--color);
+  line-height: 1;
+}

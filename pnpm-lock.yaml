@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@6njp/prototype-library':
         specifier: github:rinus-vh/prototype-library
-        version: git+https://git@github.com:rinus-vh/prototype-library.git#c984157893bc6f43197cfd1857446d3ce363da04(@floating-ui/react@0.27.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@use-gesture/react@10.3.1(react@19.2.7))(lucide-react@1.17.0(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: git+https://git@github.com:rinus-vh/prototype-library.git#1c4c637f30e572a1ddd2dd273d1fe875cab83e6e(@floating-ui/react@0.27.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@use-gesture/react@10.3.1(react@19.2.7))(lucide-react@1.17.0(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@floating-ui/react':
         specifier: ^0.27.19
         version: 0.27.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -66,6 +66,10 @@ importers:
       vite:
         specifier: ^8.0.16
         version: 8.0.16(esbuild@0.27.7)
+    optionalDependencies:
+      '@rolldown/binding-darwin-arm64':
+        specifier: 1.0.3
+        version: 1.0.3
 
 packages:
 
@@ -73,8 +77,8 @@ packages:
     resolution: {commit: bc810c8f691b7ddbab7b6e0d40dce7f28c400d66, path: eslint-plugin, repo: git@github.com:rinus-vh/plugins.git, type: git}
     version: 1.0.0
 
-  '@6njp/prototype-library@git+https://git@github.com:rinus-vh/prototype-library.git#c984157893bc6f43197cfd1857446d3ce363da04':
-    resolution: {commit: c984157893bc6f43197cfd1857446d3ce363da04, repo: git@github.com:rinus-vh/prototype-library.git, type: git}
+  '@6njp/prototype-library@git+https://git@github.com:rinus-vh/prototype-library.git#1c4c637f30e572a1ddd2dd273d1fe875cab83e6e':
+    resolution: {commit: 1c4c637f30e572a1ddd2dd273d1fe875cab83e6e, repo: git@github.com:rinus-vh/prototype-library.git, type: git}
     version: 0.0.1
     engines: {node: '>=22.0.0'}
     hasBin: true
@@ -1507,6 +1511,10 @@ packages:
     resolution: {integrity: sha512-n6l5uca7/y5joxZ3LUePhzmBFUJ+U2YWzhMa8XUTecSeSlQiZdF5XAd/Q3/WUl0VsXgUwWi8I7CNIwdI5WN1SQ==}
     engines: {node: '>=20.10'}
 
+  i@0.3.7:
+    resolution: {integrity: sha512-FYz4wlXgkQwIPqhzC5TdNMLSE5+GS1IIDJZY/1ZiEPCT2S3COUVZeT5OW4BmW4r5LHLQuOosSwsvnroG9GR59Q==}
+    engines: {node: '>=0.4'}
+
   icss-utils@5.1.0:
     resolution: {integrity: sha512-soFhflCVWLfRNOPU3iv5Z9VUdT44xFRbzjLsEzSr5AQmgqPMTHdU3PMT1Cf1ssx8fLNJDA1juftYl+PUcv3MqA==}
     engines: {node: ^10 || ^12 || >= 14}
@@ -1988,6 +1996,11 @@ packages:
   picomatch@4.0.4:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
+
+  pnpm@11.8.0:
+    resolution: {integrity: sha512-wfXnxMskHI8XS3Q4UdgvQrgCMkr8iw8Ra5atsVqgZmSUjd42lgo7oQebpbSyndAUATW5S1tfUmNZIknWjlVfJg==}
+    engines: {node: '>=22.13'}
+    hasBin: true
 
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
@@ -2475,11 +2488,13 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  '@6njp/prototype-library@git+https://git@github.com:rinus-vh/prototype-library.git#c984157893bc6f43197cfd1857446d3ce363da04(@floating-ui/react@0.27.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@use-gesture/react@10.3.1(react@19.2.7))(lucide-react@1.17.0(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@6njp/prototype-library@git+https://git@github.com:rinus-vh/prototype-library.git#1c4c637f30e572a1ddd2dd273d1fe875cab83e6e(@floating-ui/react@0.27.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@use-gesture/react@10.3.1(react@19.2.7))(lucide-react@1.17.0(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@floating-ui/react': 0.27.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@use-gesture/react': 10.3.1(react@19.2.7)
+      i: 0.3.7
       lucide-react: 1.17.0(react@19.2.7)
+      pnpm: 11.8.0
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
@@ -4123,6 +4138,8 @@ snapshots:
 
   html-tags@5.1.0: {}
 
+  i@0.3.7: {}
+
   icss-utils@5.1.0(postcss@8.5.15):
     dependencies:
       postcss: 8.5.15
@@ -4556,6 +4573,8 @@ snapshots:
   picomatch@2.3.2: {}
 
   picomatch@4.0.4: {}
+
+  pnpm@11.8.0: {}
 
   possible-typed-array-names@1.1.0: {}
 

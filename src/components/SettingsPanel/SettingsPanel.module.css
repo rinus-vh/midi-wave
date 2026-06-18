@@ -76,33 +76,25 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-}
+  border-radius: var(--radius-8);
+  transition: background-color 100ms ease;
 
-.midiRow {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  & > .noteInput {
-    width: 44px;
+  &.isDragOver,
+  &.isContextActive {
+    background-color: color-mix(in srgb, var(--dynamic-color) 20%, transparent);
+    outline: 1px dashed var(--dynamic-color);
   }
 }
 
-/* ── Shared inputs ────────────────────────────────────────────────────────── */
+.midiNotesButtonLayout {
+  width: 100%;
+}
 
-.noteInput {
-  background-color: var(--surface-color);
-  color: var(--color);
-  border: 1px solid color-mix(in srgb, var(--color) 18%, transparent);
-  border-radius: var(--radius-4);
-  padding: 1px 4px;
-  font-size: 11px;
-  font-family: monospace;
-
-  &:focus {
-    outline: none;
-    border-color: var(--dynamic-color);
-  }
+.assignmentDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-circle);
+  background-color: var(--dynamic-color);
 }
 
 .colorInputLayout {
