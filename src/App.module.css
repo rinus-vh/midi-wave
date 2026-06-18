@@ -1,4 +1,4 @@
-.app {
+.componentPanels {
   display: grid;
   grid-template-columns: repeat(auto-fill, 64px);
   gap: 12px;
@@ -14,5 +14,9 @@
 
   & > .gridLayout {
     grid-column: 1 / -1;
+  }
+
+  & > .minimizedMenuLayout {
+    align-self: stretch;
   }
 }

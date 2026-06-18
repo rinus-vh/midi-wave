@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "vite-dev",
+      "name": "midi-wave",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["start"],
-      "port": 5173
+      "port": 5174,
+      "autoPort": true
     }
   ]
 }

@@ -3,16 +3,34 @@ import { drawWireframe } from '@/utils/visualRenderer.js'
 
 import styles from './VisualCanvas.module.css'
 
-export function VisualCanvas({ controls, colorConfig, updateControl, isDark, midiNotes, showTimeline, invertColors }) {
+const hexToRgba = (hex) => {
+  if (!hex || hex.length < 7) return null
+  const h = hex.replace('#', '').padEnd(8, 'ff')
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  const a = (parseInt(h.slice(6, 8), 16) / 255).toFixed(3)
+  return `rgba(${r},${g},${b},${a})`
+}
+
+export function VisualCanvas({ controls, colorConfig, updateControl, isDark, midiNotes, showTimeline, invertColors, bgColor, materialSettings, lightingSettings, wireframeSettings }) {
   const canvasRef = React.useRef(null)
   const animationRef = React.useRef(null)
   const isDraggingRef = React.useRef(false)
   const lastMousePosRef = React.useRef({ x: 0, y: 0 })
   const controlsRef = React.useRef(controls)
   const isDarkRef = React.useRef(isDark)
+  const materialRef = React.useRef(materialSettings)
+  const lightingRef = React.useRef(lightingSettings)
+  const wireframeRef = React.useRef(wireframeSettings)
+  const bgColorRef = React.useRef(bgColor)
 
   React.useEffect(() => { controlsRef.current = controls }, [controls])
   React.useEffect(() => { isDarkRef.current = isDark }, [isDark])
+  React.useEffect(() => { materialRef.current = materialSettings }, [materialSettings])
+  React.useEffect(() => { lightingRef.current = lightingSettings }, [lightingSettings])
+  React.useEffect(() => { wireframeRef.current = wireframeSettings }, [wireframeSettings])
+  React.useEffect(() => { bgColorRef.current = bgColor }, [bgColor])
 
   React.useEffect(() => {
     const canvas = canvasRef.current
@@ -33,7 +51,7 @@ export function VisualCanvas({ controls, colorConfig, updateControl, isDark, mid
     ro.observe(canvas.parentElement)
 
     const animate = () => {
-      drawWireframe(ctx, canvas.width, canvas.height, controlsRef.current, colorConfig, isDarkRef.current)
+      drawWireframe(ctx, canvas.width, canvas.height, controlsRef.current, colorConfig, isDarkRef.current, materialRef.current, lightingRef.current, bgColorRef.current, wireframeRef.current)
       animationRef.current = requestAnimationFrame(animate)
     }
     animationRef.current = requestAnimationFrame(animate)
@@ -76,10 +94,19 @@ export function VisualCanvas({ controls, colorConfig, updateControl, isDark, mid
     }
   }, [colorConfig, updateControl])
 
+  const invertFilter = invertColors ? 'invert(1)' : undefined
+
   return (
     <div className={styles.component_root}>
-      <canvas ref={canvasRef} className={cx(styles.canvas, invertColors && styles.inverted)} />
-      {showTimeline && <MidiTimeline midiNotes={midiNotes} layoutClassName={styles.timelineLayout} />}
+      <canvas
+        ref={canvasRef}
+        style={{
+          ...(bgColor ? { backgroundColor: hexToRgba(bgColor) } : {}),
+          ...(invertFilter ? { filter: invertFilter } : {}),
+        }}
+        className={styles.canvas}
+      />
+      {showTimeline && <MidiTimeline {...{ midiNotes }} layoutClassName={styles.timelineLayout} />}
     </div>
   )
 }

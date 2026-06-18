@@ -5,32 +5,22 @@
 .component {
   display: flex;
   flex-direction: column;
-  gap: var(--size-20);
+  gap: var(--size-16);
   padding: var(--size-16);
   overflow-y: auto;
-
-  & > .resetLayout {
-    width: 100%;
-    margin-top: auto;
-  }
 }
+
+/* ── MIDI device box ──────────────────────────────────────────────────────── */
 
 .deviceSection {
   display: flex;
   flex-direction: column;
-  gap: var(--size-16);
-  padding: var(--size-12) var(--size-12) var(--size-16);
+  gap: var(--size-12);
+  padding: var(--size-12);
   border-radius: var(--radius-8);
   background-color: var(--offset-color);
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--size-8);
-}
-
-/* MIDI alert box */
 .midiAlert {
   display: flex;
   flex-direction: column;
@@ -40,7 +30,6 @@
   background-color: var(--offset-color);
 }
 
-/* MIDI status row */
 .midiStatusRow {
   display: flex;
   align-items: center;
@@ -60,21 +49,22 @@
   }
 }
 
-.removeColorBtn {
-  & > .removeIconLayout {
-    width: 10px;
-    height: 10px;
-  }
+/* ── Sections ─────────────────────────────────────────────────────────────── */
+
+.componentSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-8);
 }
 
-.addColorBtn {
-  & > .addIconLayout {
-    width: 12px;
-    height: 12px;
-  }
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-8);
 }
 
-/* Knob grid */
+/* ── Knob grid ────────────────────────────────────────────────────────────── */
+
 .knobGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -88,7 +78,6 @@
   gap: 4px;
 }
 
-/* MIDI enable row below each knob */
 .midiRow {
   display: flex;
   align-items: center;
@@ -99,11 +88,13 @@
   }
 }
 
+/* ── Shared inputs ────────────────────────────────────────────────────────── */
+
 .noteInput {
   background-color: var(--surface-color);
   color: var(--color);
-  border: 1px solid var(--color-gray-700);
-  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--color) 18%, transparent);
+  border-radius: var(--radius-4);
   padding: 1px 4px;
   font-size: 11px;
   font-family: monospace;
@@ -114,77 +105,7 @@
   }
 }
 
-/* Color section */
-.colorSwatches {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.colorSwatch {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  & > .colorPicker {
-    width: 32px;
-    height: 32px;
-  }
-}
-
-.colorPicker {
-  cursor: pointer;
-  border: 1px solid var(--color-gray-700);
-  border-radius: 4px;
-  background: none;
-  padding: 1px;
-}
-
-.removeColorBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: var(--color-gray-500);
-  cursor: pointer;
-  border-radius: 4px;
-  padding: 2px;
-
-  &:hover {
-    color: var(--color);
-  }
-}
-
-.addColorBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 1px solid var(--color-gray-700);
-  border-radius: 4px;
-  color: var(--color);
-  cursor: pointer;
-
-  &:hover {
-    border-color: var(--color-gray-500);
-  }
-}
-
-.colorSwatches {
-  & > .addColorBtn {
-    width: 32px;
-    height: 32px;
-  }
-}
-
-.midiColorRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  & > .noteInput {
-    width: 44px;
-  }
+.colorInputLayout {
+  width: 32px;
+  height: 32px;
 }
