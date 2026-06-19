@@ -51,7 +51,7 @@ export const LIGHTING_DEFAULTS = {
 
 export const WIREFRAME_DEFAULTS = {
   style: 'grid',
-  dotSize: 4,
+  dotSize: 2,
   dashSize: 12,
   glow: false,
   glowIntensity: 5,
@@ -66,6 +66,6 @@ export const COLOR_CONFIG_DEFAULTS = {
 }
 
 export const SCENE_DEFAULTS = {
-  bgColor: '#000000ff',
+  bgColor: '#00000000',
   invertColors: false,
 }

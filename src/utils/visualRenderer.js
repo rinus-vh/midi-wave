@@ -300,12 +300,6 @@ export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark 
     const freqMap = audioConfig?.frequencyMap ?? null
     const freqMapSize = freqMap ? Math.round(Math.sqrt(freqMap.length)) : 5
 
-    const pointColor = (x, z) => {
-      if (!useFreqColors) return baseColor
-      const zone = freqZoneForPoint(x / (gridSize - 1), z / (gridSize - 1), freqMap, freqMapSize)
-      return freqToColor(zone)
-    }
-
     // Always reset dash state at start of frame to prevent bleed between styles
     ctx.setLineDash([])
 
@@ -324,17 +318,39 @@ export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark 
     lineCtx.fillStyle = baseColor
     lineCtx.lineWidth = lineWidth
 
+    // Pre-project all points once when freq colors are on — avoids projecting
+    // each point 2× per segment (once as the end of one segment, once as the
+    // start of the next). Also needed for the bucket-batching path below.
+    const projected = useFreqColors
+      ? points.map(p => project3DTo2D(p, width, height, controls))
+      : null
+
+    // Batch freq-color segments by quantized color bucket so we issue at most
+    // FREQ_BUCKETS stroke/fill calls instead of one per segment/dot.
+    // 48 buckets gives a smooth gradient with no perceptible banding.
+    const FREQ_BUCKETS = 48
+
     if (wireStyle === 'dots') {
       const dotR = wireframeSettings?.dotSize ?? 4
       if (useFreqColors) {
+        const buckets = Array.from({ length: FREQ_BUCKETS }, () => [])
         for (let z = 0; z < gridSize; z++) {
           for (let x = 0; x < gridSize; x++) {
-            const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-            lineCtx.beginPath()
-            lineCtx.arc(sx, sy, dotR, 0, Math.PI * 2)
-            lineCtx.fillStyle = pointColor(x, z)
-            lineCtx.fill()
+            const zone = freqZoneForPoint(x / (gridSize - 1), z / (gridSize - 1), freqMap, freqMapSize)
+            const b = Math.min(FREQ_BUCKETS - 1, Math.floor(zone * FREQ_BUCKETS))
+            buckets[b].push(z * gridSize + x)
           }
+        }
+        for (let b = 0; b < FREQ_BUCKETS; b++) {
+          if (buckets[b].length === 0) continue
+          lineCtx.fillStyle = freqToColor((b + 0.5) / FREQ_BUCKETS)
+          lineCtx.beginPath()
+          for (const idx of buckets[b]) {
+            const [sx, sy] = projected[idx]
+            lineCtx.moveTo(sx + dotR, sy)
+            lineCtx.arc(sx, sy, dotR, 0, Math.PI * 2)
+          }
+          lineCtx.fill()
         }
       } else {
         lineCtx.beginPath()
@@ -352,27 +368,32 @@ export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark 
       lineCtx.setLineDash([dash, dash * 0.6])
 
       if (useFreqColors) {
+        const buckets = Array.from({ length: FREQ_BUCKETS }, () => [])
         for (let z = 0; z < gridSize; z++) {
           for (let x = 0; x < gridSize - 1; x++) {
-            const [sx0, sy0] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-            const [sx1, sy1] = project3DTo2D(points[z * gridSize + x + 1], width, height, controls)
-            lineCtx.beginPath()
-            lineCtx.moveTo(sx0, sy0)
-            lineCtx.lineTo(sx1, sy1)
-            lineCtx.strokeStyle = pointColor(x, z)
-            lineCtx.stroke()
+            const zone = freqZoneForPoint(x / (gridSize - 1), z / (gridSize - 1), freqMap, freqMapSize)
+            const b = Math.min(FREQ_BUCKETS - 1, Math.floor(zone * FREQ_BUCKETS))
+            buckets[b].push([z * gridSize + x, z * gridSize + x + 1])
           }
         }
         for (let x = 0; x < gridSize; x++) {
           for (let z = 0; z < gridSize - 1; z++) {
-            const [sx0, sy0] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-            const [sx1, sy1] = project3DTo2D(points[(z + 1) * gridSize + x], width, height, controls)
-            lineCtx.beginPath()
+            const zone = freqZoneForPoint(x / (gridSize - 1), z / (gridSize - 1), freqMap, freqMapSize)
+            const b = Math.min(FREQ_BUCKETS - 1, Math.floor(zone * FREQ_BUCKETS))
+            buckets[b].push([z * gridSize + x, (z + 1) * gridSize + x])
+          }
+        }
+        for (let b = 0; b < FREQ_BUCKETS; b++) {
+          if (buckets[b].length === 0) continue
+          lineCtx.strokeStyle = freqToColor((b + 0.5) / FREQ_BUCKETS)
+          lineCtx.beginPath()
+          for (const [i0, i1] of buckets[b]) {
+            const [sx0, sy0] = projected[i0]
+            const [sx1, sy1] = projected[i1]
             lineCtx.moveTo(sx0, sy0)
             lineCtx.lineTo(sx1, sy1)
-            lineCtx.strokeStyle = pointColor(x, z)
-            lineCtx.stroke()
           }
+          lineCtx.stroke()
         }
       } else {
         for (let z = 0; z < gridSize; z++) {
@@ -396,27 +417,32 @@ export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark 
       lineCtx.setLineDash([])
     } else {
       if (useFreqColors) {
+        const buckets = Array.from({ length: FREQ_BUCKETS }, () => [])
         for (let z = 0; z < gridSize; z++) {
           for (let x = 0; x < gridSize - 1; x++) {
-            const [sx0, sy0] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-            const [sx1, sy1] = project3DTo2D(points[z * gridSize + x + 1], width, height, controls)
-            lineCtx.beginPath()
-            lineCtx.moveTo(sx0, sy0)
-            lineCtx.lineTo(sx1, sy1)
-            lineCtx.strokeStyle = pointColor(x, z)
-            lineCtx.stroke()
+            const zone = freqZoneForPoint(x / (gridSize - 1), z / (gridSize - 1), freqMap, freqMapSize)
+            const b = Math.min(FREQ_BUCKETS - 1, Math.floor(zone * FREQ_BUCKETS))
+            buckets[b].push([z * gridSize + x, z * gridSize + x + 1])
           }
         }
         for (let x = 0; x < gridSize; x++) {
           for (let z = 0; z < gridSize - 1; z++) {
-            const [sx0, sy0] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-            const [sx1, sy1] = project3DTo2D(points[(z + 1) * gridSize + x], width, height, controls)
-            lineCtx.beginPath()
+            const zone = freqZoneForPoint(x / (gridSize - 1), z / (gridSize - 1), freqMap, freqMapSize)
+            const b = Math.min(FREQ_BUCKETS - 1, Math.floor(zone * FREQ_BUCKETS))
+            buckets[b].push([z * gridSize + x, (z + 1) * gridSize + x])
+          }
+        }
+        for (let b = 0; b < FREQ_BUCKETS; b++) {
+          if (buckets[b].length === 0) continue
+          lineCtx.strokeStyle = freqToColor((b + 0.5) / FREQ_BUCKETS)
+          lineCtx.beginPath()
+          for (const [i0, i1] of buckets[b]) {
+            const [sx0, sy0] = projected[i0]
+            const [sx1, sy1] = projected[i1]
             lineCtx.moveTo(sx0, sy0)
             lineCtx.lineTo(sx1, sy1)
-            lineCtx.strokeStyle = pointColor(x, z)
-            lineCtx.stroke()
           }
+          lineCtx.stroke()
         }
       } else {
         for (let z = 0; z < gridSize; z++) {

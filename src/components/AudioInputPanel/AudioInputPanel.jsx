@@ -64,7 +64,6 @@ export function AudioInputPanel({ audioConfig, updateAudioConfig, audioDevices, 
         frequencyMap={audioConfig.frequencyMap}
         mapSize={HEATMAP_SIZE}
         onUpdate={map => updateAudioConfig({ frequencyMap: map })}
-        disabled={!audioConfig.enabled}
       />
 
       <PanelContainerDivider />

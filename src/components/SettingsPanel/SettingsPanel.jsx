@@ -283,7 +283,7 @@ export function SettingsPanel({
         <PanelContainer>
           <PanelContainerSettingsRow
             label='Background'
-            className={bgColorDragOver ? styles.isDragOver : undefined}
+            className={bgColorDragOver ? styles.isDragOverRow : undefined}
             onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setBgColorDragOver(true) }}
             onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setBgColorDragOver(false) }}
             onDrop={e => {
@@ -323,7 +323,7 @@ export function SettingsPanel({
             onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setInvertColorsDragOver(true) }}
             onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setInvertColorsDragOver(false) }}
             onDrop={e => { e.preventDefault(); setInvertColorsDragOver(false); const n = getDraggedNote(); if (n !== null) onAddBooleanAssignment('invertColors', n) }}
-            className={invertColorsDragOver ? styles.isDragOver : undefined}
+            className={invertColorsDragOver ? styles.isDragOverRow : undefined}
           >
             <Checkbox checked={invertColors} onChange={onInvertColorsChange} />
           </PanelContainerSettingsRow>

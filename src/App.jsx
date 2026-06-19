@@ -483,7 +483,7 @@ function AppPanels({
             isMinimizable
             title='MIDI Notes'
             minWidth={3}
-            minHeight={4}
+            minHeight={2}
             onClose={midiNotesPanel.close}
             onMinimize={midiNotesPanel.minimize}
           >
