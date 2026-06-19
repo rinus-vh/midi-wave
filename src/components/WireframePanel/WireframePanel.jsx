@@ -25,7 +25,11 @@ export function WireframePanel({
     setIsDragOver(false)
     const note = getDraggedNote()
     if (note === null) return
-    updateColorConfig({ useMidi: true, midiNote: note })
+    updateColorConfig({
+      useMidi: true,
+      midiNote: note,
+      colors: colorConfig.useMidi ? colorConfig.colors : [colorValueHex],
+    })
     setColorPickerOpen(true)
   }
 
