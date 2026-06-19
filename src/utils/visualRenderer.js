@@ -136,6 +136,34 @@ const project3DTo2D = (point, width, height, controls) => {
   return [finalX * scale + width / 2, finalY * scale + height / 2, rotatedY]
 }
 
+const freqZoneForPoint = (normX, normZ, frequencyMap, mapSize) => {
+  if (frequencyMap && frequencyMap.length >= mapSize * mapSize) {
+    return sampleHeatmap(frequencyMap, mapSize, normX, normZ)
+  }
+  const dx = normX * 2 - 1
+  const dz = normZ * 2 - 1
+  return Math.min(1, Math.sqrt(dx * dx + dz * dz))
+}
+
+const FREQ_COLOR_STOPS = [
+  [0.00,  60, 70, 62],
+  [0.25,  10, 75, 58],
+  [0.50, 300, 60, 62],
+  [0.75, 225, 90, 50],
+  [1.00, 185, 85, 52],
+]
+
+const freqToColor = (zone) => {
+  const v = Math.max(0, Math.min(1, zone))
+  let i = 0
+  while (i < FREQ_COLOR_STOPS.length - 2 && FREQ_COLOR_STOPS[i + 1][0] <= v) i++
+  const [t0, h0, s0, l0] = FREQ_COLOR_STOPS[i]
+  const [t1, h1, s1, l1] = FREQ_COLOR_STOPS[i + 1]
+  const t = (v - t0) / (t1 - t0)
+  const h = h0 + (h1 - h0) * t
+  return `hsl(${Math.round(h)},${Math.round(s0 + (s1 - s0) * t)}%,${Math.round(l0 + (l1 - l0) * t)}%)`
+}
+
 export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark = true, materialSettings, lightingSettings, bgColor = null, wireframeSettings = null, frequencyData = null, audioConfig = null) => {
   const roughness = materialSettings?.roughness ?? 0.5
   const metalness = materialSettings?.metalness ?? 0.5
@@ -268,6 +296,15 @@ export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark 
     const lineWidth = 0.5 + metalness * 1.5
     const glowOn = wireframeSettings?.glow
     const wireStyle = wireframeSettings?.style ?? 'grid'
+    const useFreqColors = wireframeSettings?.freqColors ?? false
+    const freqMap = audioConfig?.frequencyMap ?? null
+    const freqMapSize = freqMap ? Math.round(Math.sqrt(freqMap.length)) : 5
+
+    const pointColor = (x, z) => {
+      if (!useFreqColors) return baseColor
+      const zone = freqZoneForPoint(x / (gridSize - 1), z / (gridSize - 1), freqMap, freqMapSize)
+      return freqToColor(zone)
+    }
 
     // Always reset dash state at start of frame to prevent bleed between styles
     ctx.setLineDash([])
@@ -289,55 +326,115 @@ export const drawWireframe = (ctx, width, height, controls, colorConfig, isDark 
 
     if (wireStyle === 'dots') {
       const dotR = wireframeSettings?.dotSize ?? 4
-      lineCtx.beginPath()
-      for (let z = 0; z < gridSize; z++) {
-        for (let x = 0; x < gridSize; x++) {
-          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-          lineCtx.moveTo(sx + dotR, sy)
-          lineCtx.arc(sx, sy, dotR, 0, Math.PI * 2)
+      if (useFreqColors) {
+        for (let z = 0; z < gridSize; z++) {
+          for (let x = 0; x < gridSize; x++) {
+            const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            lineCtx.beginPath()
+            lineCtx.arc(sx, sy, dotR, 0, Math.PI * 2)
+            lineCtx.fillStyle = pointColor(x, z)
+            lineCtx.fill()
+          }
         }
+      } else {
+        lineCtx.beginPath()
+        for (let z = 0; z < gridSize; z++) {
+          for (let x = 0; x < gridSize; x++) {
+            const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            lineCtx.moveTo(sx + dotR, sy)
+            lineCtx.arc(sx, sy, dotR, 0, Math.PI * 2)
+          }
+        }
+        lineCtx.fill()
       }
-      lineCtx.fill()
     } else if (wireStyle === 'dashed') {
       const dash = wireframeSettings?.dashSize ?? 12
       lineCtx.setLineDash([dash, dash * 0.6])
 
-      for (let z = 0; z < gridSize; z++) {
-        lineCtx.beginPath()
-        for (let x = 0; x < gridSize; x++) {
-          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-          x === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
-        }
-        lineCtx.stroke()
-      }
-
-      for (let x = 0; x < gridSize; x++) {
-        lineCtx.beginPath()
+      if (useFreqColors) {
         for (let z = 0; z < gridSize; z++) {
-          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-          z === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+          for (let x = 0; x < gridSize - 1; x++) {
+            const [sx0, sy0] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            const [sx1, sy1] = project3DTo2D(points[z * gridSize + x + 1], width, height, controls)
+            lineCtx.beginPath()
+            lineCtx.moveTo(sx0, sy0)
+            lineCtx.lineTo(sx1, sy1)
+            lineCtx.strokeStyle = pointColor(x, z)
+            lineCtx.stroke()
+          }
         }
-        lineCtx.stroke()
+        for (let x = 0; x < gridSize; x++) {
+          for (let z = 0; z < gridSize - 1; z++) {
+            const [sx0, sy0] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            const [sx1, sy1] = project3DTo2D(points[(z + 1) * gridSize + x], width, height, controls)
+            lineCtx.beginPath()
+            lineCtx.moveTo(sx0, sy0)
+            lineCtx.lineTo(sx1, sy1)
+            lineCtx.strokeStyle = pointColor(x, z)
+            lineCtx.stroke()
+          }
+        }
+      } else {
+        for (let z = 0; z < gridSize; z++) {
+          lineCtx.beginPath()
+          for (let x = 0; x < gridSize; x++) {
+            const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            x === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+          }
+          lineCtx.stroke()
+        }
+        for (let x = 0; x < gridSize; x++) {
+          lineCtx.beginPath()
+          for (let z = 0; z < gridSize; z++) {
+            const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            z === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+          }
+          lineCtx.stroke()
+        }
       }
 
       lineCtx.setLineDash([])
     } else {
-      for (let z = 0; z < gridSize; z++) {
-        lineCtx.beginPath()
-        for (let x = 0; x < gridSize; x++) {
-          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-          x === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
-        }
-        lineCtx.stroke()
-      }
-
-      for (let x = 0; x < gridSize; x++) {
-        lineCtx.beginPath()
+      if (useFreqColors) {
         for (let z = 0; z < gridSize; z++) {
-          const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
-          z === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+          for (let x = 0; x < gridSize - 1; x++) {
+            const [sx0, sy0] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            const [sx1, sy1] = project3DTo2D(points[z * gridSize + x + 1], width, height, controls)
+            lineCtx.beginPath()
+            lineCtx.moveTo(sx0, sy0)
+            lineCtx.lineTo(sx1, sy1)
+            lineCtx.strokeStyle = pointColor(x, z)
+            lineCtx.stroke()
+          }
         }
-        lineCtx.stroke()
+        for (let x = 0; x < gridSize; x++) {
+          for (let z = 0; z < gridSize - 1; z++) {
+            const [sx0, sy0] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            const [sx1, sy1] = project3DTo2D(points[(z + 1) * gridSize + x], width, height, controls)
+            lineCtx.beginPath()
+            lineCtx.moveTo(sx0, sy0)
+            lineCtx.lineTo(sx1, sy1)
+            lineCtx.strokeStyle = pointColor(x, z)
+            lineCtx.stroke()
+          }
+        }
+      } else {
+        for (let z = 0; z < gridSize; z++) {
+          lineCtx.beginPath()
+          for (let x = 0; x < gridSize; x++) {
+            const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            x === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+          }
+          lineCtx.stroke()
+        }
+        for (let x = 0; x < gridSize; x++) {
+          lineCtx.beginPath()
+          for (let z = 0; z < gridSize; z++) {
+            const [sx, sy] = project3DTo2D(points[z * gridSize + x], width, height, controls)
+            z === 0 ? lineCtx.moveTo(sx, sy) : lineCtx.lineTo(sx, sy)
+          }
+          lineCtx.stroke()
+        }
       }
     }
 

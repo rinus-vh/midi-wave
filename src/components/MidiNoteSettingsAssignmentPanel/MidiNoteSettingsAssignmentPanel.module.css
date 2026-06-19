@@ -56,14 +56,12 @@
 
 .assignmentBars {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 3px;
   flex: 1;
   min-width: 0;
-  max-height: 120px;
-  padding: var(--size-4) 0;
-  justify-content: flex-start;
-  overflow-y: auto;
+  overflow: auto;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -73,7 +71,9 @@
 
 .assignmentBar {
   position: relative;
-  height: 16px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
   border-radius: var(--radius-4);
   background-color: var(--surface-color);
   overflow: hidden;
@@ -89,36 +89,42 @@
 .barFill {
   position: absolute;
   inset: 0;
-  transform-origin: left;
-  transform: scaleX(var(--bar-fill, 1));
+  transform-origin: bottom;
+  transform: scaleY(var(--bar-fill, 1));
   background-color: var(--dynamic-color);
   opacity: 0.7;
 }
 
 .barLabel {
   position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  padding: 0 var(--size-4);
+  top: var(--size-4);
+  left: 0;
+  right: 0;
+  bottom: auto;
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--color);
   line-height: 1;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
+  padding: 0 var(--size-2);
 }
 
 .barPercent {
   position: absolute;
-  right: var(--size-4);
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
+  bottom: var(--size-4);
+  left: 0;
+  right: 0;
+  top: auto;
+  text-align: center;
   font-size: 8px;
   color: var(--color);
   line-height: 1;
   opacity: 0.7;
+}
+
+.isBoolBar {
+  outline: 1px solid color-mix(in srgb, var(--dynamic-color) 40%, transparent);
 }

@@ -70,6 +70,8 @@ export function SettingsPanel({
   updateBgColorCycleConfig,
   requestMidiAccess,
   midiErrorMessage,
+  booleanAssignments = {},
+  onAddBooleanAssignment,
 }) {
   const { getDraggedNote } = useMidiDrag()
   const [midiErrorModalOpen, setMidiErrorModalOpen] = React.useState(false)
@@ -84,6 +86,7 @@ export function SettingsPanel({
   }, [midiErrorMessage])
   const [bgColorPickerOpen, setBgColorPickerOpen] = React.useState(false)
   const [bgColorDragOver, setBgColorDragOver] = React.useState(false)
+  const [invertColorsDragOver, setInvertColorsDragOver] = React.useState(false)
   const knobCellsRef = React.useRef({})
   const tooltipHasBeenShownRef = React.useRef(false)
   const [tooltipOpen, setTooltipOpen] = React.useState(false)
@@ -214,6 +217,7 @@ export function SettingsPanel({
                     : key === 'resolution' ? 150
                     : 100
                   }
+                  normalizedValue={key === 'resolution' ? Math.floor(5 + (controls[key] / 150) * 56.25) : undefined}
                   {...{ label }}
                 />
                 {assignedNotes > 0 && (
@@ -279,6 +283,7 @@ export function SettingsPanel({
         <PanelContainer>
           <PanelContainerSettingsRow
             label='Background'
+            className={bgColorDragOver ? styles.isDragOver : undefined}
             onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setBgColorDragOver(true) }}
             onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setBgColorDragOver(false) }}
             onDrop={e => {
@@ -310,11 +315,16 @@ export function SettingsPanel({
               open={bgColorPickerOpen}
               onOpenChange={setBgColorPickerOpen}
               layoutClassName={styles.colorInputLayout}
-              {...{ isDragOver: bgColorDragOver }}
             />
           </PanelContainerSettingsRow>
 
-          <PanelContainerSettingsRow label='Invert colors'>
+          <PanelContainerSettingsRow
+            label='Invert colors'
+            onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setInvertColorsDragOver(true) }}
+            onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setInvertColorsDragOver(false) }}
+            onDrop={e => { e.preventDefault(); setInvertColorsDragOver(false); const n = getDraggedNote(); if (n !== null) onAddBooleanAssignment('invertColors', n) }}
+            className={invertColorsDragOver ? styles.isDragOver : undefined}
+          >
             <Checkbox checked={invertColors} onChange={onInvertColorsChange} />
           </PanelContainerSettingsRow>
         </PanelContainer>

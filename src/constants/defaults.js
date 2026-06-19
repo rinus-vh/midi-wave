@@ -10,8 +10,8 @@ export const AUDIO_INPUT_DEFAULTS = {
 }
 
 export const PARAM_CONTROLS = [
-  { key: 'rotation',   label: 'Y ROT' },
   { key: 'xRotation',  label: 'X ROT' },
+  { key: 'rotation',   label: 'Y ROT' },
   { key: 'zRotation',  label: 'Z ROT' },
   { key: 'scale',      label: 'HEIGHT' },
   { key: 'speed',      label: 'SPEED' },
@@ -22,9 +22,9 @@ export const PARAM_CONTROLS = [
 ]
 
 export const PARAM_DEFAULTS = {
-  rotation: 180,
-  xRotation: 198,
-  zRotation: 180,
+  rotation: 0,
+  xRotation: 270,
+  zRotation: 360,
   scale: 50,
   speed: 0,
   complexity: 0,
@@ -56,6 +56,7 @@ export const WIREFRAME_DEFAULTS = {
   glow: false,
   glowIntensity: 5,
   glowColor: '#ffffff',
+  freqColors: false,
 }
 
 export const COLOR_CONFIG_DEFAULTS = {

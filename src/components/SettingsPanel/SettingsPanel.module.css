@@ -110,6 +110,7 @@
   background-color: color-mix(in srgb, var(--dynamic-color) 12%, transparent);
   outline: 1px dashed var(--dynamic-color);
   border-radius: var(--radius-4);
+  padding: var(--size-8) var(--size-12);
 }
 
 .midiErrorModal {

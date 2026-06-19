@@ -100,7 +100,7 @@ const HOVER_RADIUS = 0.18
 const DRAG_RADIUS_MAX = 0.70
 const DRAG_RADIUS_GROWTH = 0.55
 // Gradient stops for legend bar (same palette as heatmapCellColor)
-const LEGEND_GRADIENT = 'linear-gradient(to right, hsl(240,70%,38%), hsl(190,75%,42%), hsl(120,60%,38%), hsl(45,90%,50%), hsl(5,85%,48%))'
+const LEGEND_GRADIENT = 'linear-gradient(to right, hsl(60,70%,62%), hsl(10,75%,58%), hsl(300,60%,62%), hsl(225,90%,50%), hsl(185,85%,52%))'
 
 function FrequencyHeatmapEditor({ frequencyMap, mapSize, onUpdate, disabled }) {
   const dragRef = React.useRef(null)

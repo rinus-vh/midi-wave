@@ -30,6 +30,7 @@ export default function App() {
   const [trackedNotes, setTrackedNotes] = React.useState([])
   const [activeNoteNumbers, setActiveNoteNumbers] = React.useState(new Set())
   const [midiAssignments, setMidiAssignments] = React.useState({})
+  const [booleanAssignments, setBooleanAssignments] = React.useState({})
   const [invertColors, setInvertColors] = React.useState(SCENE_DEFAULTS.invertColors)
   const [userHasChosenBgColor, setUserHasChosenBgColor] = React.useState(false)
   const [materialSettings, setMaterialSettings] = React.useState(MATERIAL_DEFAULTS)
@@ -69,6 +70,9 @@ export default function App() {
     addColor,
     removeColor,
   } = useAnimationControls()
+
+  const booleanAssignmentsRef = React.useRef(booleanAssignments)
+  React.useEffect(() => { booleanAssignmentsRef.current = booleanAssignments }, [booleanAssignments])
 
   // Stable refs for use inside the MIDI event callback
   const midiAssignmentsRef = React.useRef(midiAssignments)
@@ -114,6 +118,15 @@ export default function App() {
             const high = Math.min(100, cfg.offsetCenter + cfg.offset)
             updateControl(settingKey, low + Math.random() * (high - low))
           }
+        })
+
+        // boolean toggle assignments
+        const boolAssignments = booleanAssignmentsRef.current
+        Object.entries(boolAssignments).forEach(([settingKey, noteAssignments]) => {
+          const assignment = noteAssignments.find(a => a.noteNumber === data1)
+          if (!assignment) return
+          if (Math.random() > (assignment.chance ?? 1)) return
+          if (settingKey === 'invertColors') setInvertColors(prev => !prev)
         })
 
         // wireframe color cycling
@@ -167,6 +180,7 @@ export default function App() {
     setTrackedNotes([])
     setActiveNoteNumbers(new Set())
     setMidiAssignments({})
+    setBooleanAssignments({})
     setBgColorCycleConfig({ midiNote: null, colors: [] })
     setSolidColorCycleConfig({ midiNote: null, colors: [] })
     bgColorCycleIndexRef.current = 0
@@ -217,6 +231,33 @@ export default function App() {
     })
   }, [])
 
+  const addBooleanAssignment = React.useCallback((settingKey, noteNumber) => {
+    setBooleanAssignments(prev => {
+      const existing = prev[settingKey] ?? []
+      if (existing.some(a => a.noteNumber === noteNumber)) return prev
+      return { ...prev, [settingKey]: [...existing, { noteNumber, chance: 1 }] }
+    })
+  }, [])
+
+  const updateBooleanAssignment = React.useCallback((settingKey, noteNumber, chance) => {
+    setBooleanAssignments(prev => ({
+      ...prev,
+      [settingKey]: (prev[settingKey] ?? []).map(a =>
+        a.noteNumber === noteNumber ? { ...a, chance } : a
+      ),
+    }))
+  }, [])
+
+  const removeBooleanAssignment = React.useCallback((settingKey, noteNumber) => {
+    setBooleanAssignments(prev => {
+      const updated = (prev[settingKey] ?? []).filter(a => a.noteNumber !== noteNumber)
+      const next = { ...prev }
+      if (updated.length === 0) delete next[settingKey]
+      else next[settingKey] = updated
+      return next
+    })
+  }, [])
+
   const themeVariables = getThemeVariables(isDark ? 'dark' : 'light')
 
   return (
@@ -234,12 +275,16 @@ export default function App() {
             onUpdateMidiAssignment={updateMidiAssignment}
             onClearMidiAssignments={clearMidiAssignments}
             onRemoveMidiAssignment={removeMidiAssignment}
+            onAddBooleanAssignment={addBooleanAssignment}
+            onUpdateBooleanAssignment={updateBooleanAssignment}
+            onRemoveBooleanAssignment={removeBooleanAssignment}
             {...{
               isDark,
               themeVariables,
               trackedNotes,
               activeNoteNumbers,
               midiAssignments,
+              booleanAssignments,
               invertColors,
               bgColor,
               materialSettings,
@@ -325,6 +370,10 @@ function AppPanels({
   onUpdateMidiAssignment,
   onClearMidiAssignments,
   onRemoveMidiAssignment,
+  booleanAssignments,
+  onAddBooleanAssignment,
+  onUpdateBooleanAssignment,
+  onRemoveBooleanAssignment,
   audioConfig,
   updateAudioConfig,
   audioDevices,
@@ -395,6 +444,8 @@ function AppPanels({
                 onClearMidiAssignments,
                 bgColorCycleConfig,
                 updateBgColorCycleConfig,
+                booleanAssignments,
+                onAddBooleanAssignment,
               }}
             />
           </Panel>
@@ -444,7 +495,10 @@ function AppPanels({
                 onUpdateMidiAssignment,
                 onRemoveMidiAssignment,
                 colorAssignments,
-                onRemoveColorAssignment
+                onRemoveColorAssignment,
+                booleanAssignments,
+                onUpdateBooleanAssignment,
+                onRemoveBooleanAssignment
               }}
             />
           </Panel>

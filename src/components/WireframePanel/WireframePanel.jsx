@@ -83,6 +83,7 @@ export function WireframePanel({
         onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDragOver(true) }}
         onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
         onDrop={handleColorDrop}
+        className={isDragOver ? styles.isDragOver : undefined}
       >
         <ColorInput
           colorArrayIsActive={colorConfig.useMidi}
@@ -100,7 +101,13 @@ export function WireframePanel({
           open={colorPickerOpen}
           onOpenChange={setColorPickerOpen}
           layoutClassName={styles.colorInputLayout}
-          {...{ isDragOver }}
+        />
+      </PanelContainerSettingsRow>
+
+      <PanelContainerSettingsRow label='Freq. colours'>
+        <Checkbox
+          checked={wireframeSettings.freqColors}
+          onChange={freqColors => updateWireframe({ freqColors })}
         />
       </PanelContainerSettingsRow>
 

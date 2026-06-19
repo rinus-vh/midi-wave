@@ -55,13 +55,13 @@ function lerpHue(h0, h1, t) {
   return (h0 + d * t + 360) % 360
 }
 
-// value 0=bass, 1=treble — thermal heatmap palette (blue→cyan→green→yellow→red)
+// value 0=bass, 1=treble — inverted thermal palette (yellow→pink→teal)
 const COLOR_STOPS = [
-  [0.00,   5, 85, 48],
-  [0.25,  45, 90, 50],
-  [0.50, 120, 60, 38],
-  [0.75, 190, 75, 42],
-  [1.00, 240, 70, 38],
+  [0.00,  60, 70, 62],
+  [0.25,  10, 75, 58],
+  [0.50, 300, 60, 62],
+  [0.75, 225, 90, 50],
+  [1.00, 185, 85, 52],
 ]
 
 export function heatmapCellColor(value) {

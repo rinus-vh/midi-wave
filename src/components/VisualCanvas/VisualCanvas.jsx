@@ -60,19 +60,44 @@ export function VisualCanvas({ controls, colorConfig, updateControl, isDark, inv
     }
     animationRef.current = requestAnimationFrame(animate)
 
+    // null = free, 'x' = locked to horizontal (Y rot), 'y' = locked to vertical (X rot)
+    const shiftAxisRef = { current: null }
+    const shiftAccRef = { current: { x: 0, y: 0 } }
+
     const onMouseDown = (e) => {
       isDraggingRef.current = true
       lastMousePosRef.current = { x: e.clientX, y: e.clientY }
+      shiftAxisRef.current = null
+      shiftAccRef.current = { x: 0, y: 0 }
     }
 
     const onMouseMove = (e) => {
       if (!isDraggingRef.current) return
       const dx = e.clientX - lastMousePosRef.current.x
       const dy = e.clientY - lastMousePosRef.current.y
-      const c = controlsRef.current
-      updateControl('xRotation', Math.max(0, Math.min(360, c.xRotation + dy * 1.8)))
-      updateControl('rotation', Math.max(0, Math.min(360, c.rotation + dx * 1.8)))
       lastMousePosRef.current = { x: e.clientX, y: e.clientY }
+
+      const c = controlsRef.current
+      if (e.shiftKey) {
+        if (!shiftAxisRef.current) {
+          shiftAccRef.current.x += Math.abs(dx)
+          shiftAccRef.current.y += Math.abs(dy)
+          const threshold = 6
+          if (shiftAccRef.current.x >= threshold || shiftAccRef.current.y >= threshold) {
+            shiftAxisRef.current = shiftAccRef.current.x >= shiftAccRef.current.y ? 'x' : 'y'
+          }
+        }
+        if (shiftAxisRef.current === 'x') {
+          updateControl('rotation', Math.max(0, Math.min(360, c.rotation + dx * 1.8)))
+        } else if (shiftAxisRef.current === 'y') {
+          updateControl('xRotation', Math.max(0, Math.min(360, c.xRotation + dy * 1.8)))
+        }
+      } else {
+        shiftAxisRef.current = null
+        shiftAccRef.current = { x: 0, y: 0 }
+        updateControl('xRotation', Math.max(0, Math.min(360, c.xRotation + dy * 1.8)))
+        updateControl('rotation', Math.max(0, Math.min(360, c.rotation + dx * 1.8)))
+      }
     }
 
     const onMouseUp = () => { isDraggingRef.current = false }

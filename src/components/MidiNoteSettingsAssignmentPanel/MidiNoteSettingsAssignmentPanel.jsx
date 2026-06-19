@@ -8,6 +8,7 @@ import styles from './MidiNoteSettingsAssignmentPanel.module.css'
 
 const PARAM_LABEL = Object.fromEntries(PARAM_CONTROLS.map(({ key, label }) => [key, label]))
 const COLOR_LABEL = { wireframeColor: 'Wireframe', bgColor: 'Background', solidColor: 'Solid' }
+const BOOL_LABEL = { invertColors: 'INVERT' }
 
 export function MidiNoteSettingsAssignmentPanel({
   trackedNotes,
@@ -17,6 +18,9 @@ export function MidiNoteSettingsAssignmentPanel({
   onRemoveMidiAssignment,
   colorAssignments = {},
   onRemoveColorAssignment,
+  booleanAssignments = {},
+  onUpdateBooleanAssignment,
+  onRemoveBooleanAssignment,
 }) {
   if (trackedNotes.length === 0) {
     return (
@@ -42,11 +46,15 @@ export function MidiNoteSettingsAssignmentPanel({
           .filter(([, arr]) => arr.some(a => a.noteNumber === note.noteNumber))
           .map(([key]) => ({ key }))
 
+        const boolAssignmentsForNote = Object.entries(booleanAssignments)
+          .filter(([, arr]) => arr.some(a => a.noteNumber === note.noteNumber))
+          .map(([key, arr]) => ({ key, chance: arr.find(a => a.noteNumber === note.noteNumber).chance }))
+
         return (
           <NoteRow
             key={note.noteNumber}
             isActive={activeNoteNumbers.has(note.noteNumber)}
-            {...{ note, assignments, onUpdateMidiAssignment, onRemoveMidiAssignment, colorAssignmentsForNote, onRemoveColorAssignment }}
+            {...{ note, assignments, onUpdateMidiAssignment, onRemoveMidiAssignment, colorAssignmentsForNote, onRemoveColorAssignment, boolAssignmentsForNote, onUpdateBooleanAssignment, onRemoveBooleanAssignment }}
           />
         )
       })}
@@ -54,7 +62,7 @@ export function MidiNoteSettingsAssignmentPanel({
   )
 }
 
-function NoteRow({ note, isActive, assignments, onUpdateMidiAssignment, onRemoveMidiAssignment, colorAssignmentsForNote, onRemoveColorAssignment }) {
+function NoteRow({ note, isActive, assignments, onUpdateMidiAssignment, onRemoveMidiAssignment, colorAssignmentsForNote, onRemoveColorAssignment, boolAssignmentsForNote, onUpdateBooleanAssignment, onRemoveBooleanAssignment }) {
   const { setDraggedNote } = useMidiDrag()
   const black = isBlackKey(note.noteNumber)
 
@@ -89,6 +97,15 @@ function NoteRow({ note, isActive, assignments, onUpdateMidiAssignment, onRemove
             key={key}
             colorKey={key}
             onRemove={() => onRemoveColorAssignment?.(key)}
+          />
+        ))}
+        {boolAssignmentsForNote.map(({ key, chance }) => (
+          <BooleanAssignmentBar
+            key={key}
+            settingKey={key}
+            chance={chance}
+            onUpdate={(newChance) => onUpdateBooleanAssignment(key, note.noteNumber, newChance)}
+            onRemove={() => onRemoveBooleanAssignment(key, note.noteNumber)}
           />
         ))}
       </div>
@@ -168,6 +185,53 @@ function ColorAssignmentBar({ colorKey, onRemove }) {
         y={contextMenu.y}
         onClose={() => setContextMenu(prev => ({ ...prev, open: false }))}
         items={[{ label: 'Remove color assignment', onClick: onRemove }]}
+      />
+    </>
+  )
+}
+
+function BooleanAssignmentBar({ settingKey, chance, onUpdate, onRemove }) {
+  const dragRef = React.useRef(null)
+  const [contextMenu, setContextMenu] = React.useState({ open: false, x: 0, y: 0 })
+
+  function handlePointerDown(e) {
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    dragRef.current = { startY: e.clientY, startChance: chance }
+  }
+
+  function handlePointerMove(e) {
+    if (!dragRef.current || !e.buttons) return
+    const delta = (dragRef.current.startY - e.clientY) / 80
+    onUpdate(Math.max(0, Math.min(1, dragRef.current.startChance + delta)))
+  }
+
+  function handlePointerUp() { dragRef.current = null }
+
+  const label = BOOL_LABEL[settingKey] ?? settingKey
+  const showPercent = chance < 1
+
+  return (
+    <>
+      <div
+        style={{ '--bar-fill': chance }}
+        title={`${label} — toggle (${Math.round(chance * 100)}% chance)`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setContextMenu({ open: true, x: e.clientX, y: e.clientY }) }}
+        className={cx(styles.assignmentBar, styles.isBoolBar)}
+      >
+        <div className={styles.barFill} />
+        <span className={styles.barLabel}>{label}</span>
+        {showPercent && <span className={styles.barPercent}>{Math.round(chance * 100)}%</span>}
+      </div>
+      <ContextMenu
+        isOpen={contextMenu.open}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        onClose={() => setContextMenu(prev => ({ ...prev, open: false }))}
+        items={[{ label: 'Remove assignment', onClick: onRemove }]}
       />
     </>
   )

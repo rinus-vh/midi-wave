@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef } from 'react'
 
 const defaultControls = {
-  rotation: 180,
-  xRotation: 198,
-  zRotation: 180,
+  rotation: 0,
+  xRotation: 270,
+  zRotation: 360,
   scale: 50,
   speed: 0,
   complexity: 0,
@@ -15,9 +15,9 @@ const defaultControls = {
 }
 
 const defaultMidiConfig = {
-  rotation:   { offset: 0, offsetCenter: 180 },
-  xRotation:  { offset: 0, offsetCenter: 198 },
-  zRotation:  { offset: 0, offsetCenter: 180 },
+  rotation:   { offset: 0, offsetCenter: 0 },
+  xRotation:  { offset: 0, offsetCenter: 270 },
+  zRotation:  { offset: 0, offsetCenter: 360 },
   scale:      { offset: 0, offsetCenter: 50 },
   speed:      { offset: 0, offsetCenter: 50 },
   complexity: { offset: 0, offsetCenter: 50 },
