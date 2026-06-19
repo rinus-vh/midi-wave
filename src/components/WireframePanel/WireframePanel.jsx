@@ -46,7 +46,7 @@ export function WireframePanel({
 
   return (
     <PanelContainer>
-      <PanelContainerSettingsRow label='Wireframe style'>
+      <PanelContainerSettingsRow label='Style'>
         <Dropdown
           value={wireframeSettings.style ?? 'grid'}
           onChange={style => updateWireframe({ style })}

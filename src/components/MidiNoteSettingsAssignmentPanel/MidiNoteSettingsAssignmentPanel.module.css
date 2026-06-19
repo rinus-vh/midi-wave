@@ -79,6 +79,11 @@
   overflow: hidden;
   cursor: ns-resize;
   user-select: none;
+
+  &.isColorBar {
+    cursor: default;
+    opacity: 0.85;
+  }
 }
 
 .barFill {

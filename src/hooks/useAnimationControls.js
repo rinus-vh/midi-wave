@@ -36,7 +36,6 @@ export function useAnimationControls() {
   const [controls, setControls] = useState(defaultControls)
   const [midiConfig, setMidiConfig] = useState(defaultMidiConfig)
   const [colorConfig, setColorConfig] = useState(defaultColorConfig)
-  const [_currentColorIndex, setCurrentColorIndex] = useState(0)
   const lastMidiNoteRef = useRef(0)
 
   const updateControl = useCallback((name, value) => {
@@ -66,28 +65,12 @@ export function useAnimationControls() {
       ...prev,
       colors: prev.colors.filter((_, i) => i !== index),
     }))
-    setCurrentColorIndex(prev => Math.max(0, prev - 1))
   }, [])
 
   const handleMidiMessage = useCallback((event) => {
-    const [status, data1, data2] = Array.from(event.data)
+    const [, data1] = Array.from(event.data)
     lastMidiNoteRef.current = data1
-
-    if ((status & 0xF0) === 0x90 && data2 > 0) {
-      setColorConfig(colorCfg => {
-        if (colorCfg.useMidi && data1 === colorCfg.midiNote && colorCfg.colors.length > 0) {
-          setCurrentColorIndex(prev => {
-            const nextIndex = (prev + 1) % colorCfg.colors.length
-            const hexColor = colorCfg.colors[nextIndex].substring(1)
-            const normalized = (parseInt(hexColor, 16) / 0xFFFFFF) * 100
-            updateControl('color', normalized)
-            return nextIndex
-          })
-        }
-        return colorCfg
-      })
-    }
-  }, [updateControl])
+  }, [])
 
   const resetControls = useCallback((isDark) => {
     const color = isDark ? (0xf4f4f4 / 0xFFFFFF) * 100 : (0x262626 / 0xFFFFFF) * 100

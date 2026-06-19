@@ -7,6 +7,7 @@ import { isBlackKey } from '@/utils/midiNoteNames.js'
 import styles from './MidiNoteSettingsAssignmentPanel.module.css'
 
 const PARAM_LABEL = Object.fromEntries(PARAM_CONTROLS.map(({ key, label }) => [key, label]))
+const COLOR_LABEL = { wireframeColor: 'Wireframe', bgColor: 'Background', solidColor: 'Solid' }
 
 export function MidiNoteSettingsAssignmentPanel({
   trackedNotes,
@@ -14,6 +15,8 @@ export function MidiNoteSettingsAssignmentPanel({
   midiAssignments = {},
   onUpdateMidiAssignment,
   onRemoveMidiAssignment,
+  colorAssignments = {},
+  onRemoveColorAssignment,
 }) {
   if (trackedNotes.length === 0) {
     return (
@@ -35,11 +38,15 @@ export function MidiNoteSettingsAssignmentPanel({
             chance: arr.find(a => a.noteNumber === note.noteNumber).chance,
           }))
 
+        const colorAssignmentsForNote = Object.entries(colorAssignments)
+          .filter(([, arr]) => arr.some(a => a.noteNumber === note.noteNumber))
+          .map(([key]) => ({ key }))
+
         return (
           <NoteRow
             key={note.noteNumber}
             isActive={activeNoteNumbers.has(note.noteNumber)}
-            {...{ note, assignments, onUpdateMidiAssignment, onRemoveMidiAssignment }}
+            {...{ note, assignments, onUpdateMidiAssignment, onRemoveMidiAssignment, colorAssignmentsForNote, onRemoveColorAssignment }}
           />
         )
       })}
@@ -47,7 +54,7 @@ export function MidiNoteSettingsAssignmentPanel({
   )
 }
 
-function NoteRow({ note, isActive, assignments, onUpdateMidiAssignment, onRemoveMidiAssignment }) {
+function NoteRow({ note, isActive, assignments, onUpdateMidiAssignment, onRemoveMidiAssignment, colorAssignmentsForNote, onRemoveColorAssignment }) {
   const { setDraggedNote } = useMidiDrag()
   const black = isBlackKey(note.noteNumber)
 
@@ -75,6 +82,13 @@ function NoteRow({ note, isActive, assignments, onUpdateMidiAssignment, onRemove
             onUpdate={(newChance) => onUpdateMidiAssignment(key, note.noteNumber, newChance)}
             onRemove={() => onRemoveMidiAssignment(key, note.noteNumber)}
             {...{ chance }}
+          />
+        ))}
+        {colorAssignmentsForNote.map(({ key }) => (
+          <ColorAssignmentBar
+            key={key}
+            colorKey={key}
+            onRemove={() => onRemoveColorAssignment?.(key)}
           />
         ))}
       </div>
@@ -127,6 +141,33 @@ function AssignmentBar({ settingKey, chance, onUpdate, onRemove }) {
         y={contextMenu.y}
         onClose={() => setContextMenu(prev => ({ ...prev, open: false }))}
         items={[{ label: 'Remove assignment', onClick: onRemove }]}
+      />
+    </>
+  )
+}
+
+function ColorAssignmentBar({ colorKey, onRemove }) {
+  const [contextMenu, setContextMenu] = React.useState({ open: false, x: 0, y: 0 })
+  const label = COLOR_LABEL[colorKey] ?? colorKey
+
+  return (
+    <>
+      <div
+        style={{ '--bar-fill': 1 }}
+        title={`${label} color — MIDI cycle`}
+        onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setContextMenu({ open: true, x: e.clientX, y: e.clientY }) }}
+        className={cx(styles.assignmentBar, styles.isColorBar)}
+      >
+        <div className={styles.barFill} />
+        <span className={styles.barLabel}>{label}</span>
+      </div>
+
+      <ContextMenu
+        isOpen={contextMenu.open}
+        x={contextMenu.x}
+        y={contextMenu.y}
+        onClose={() => setContextMenu(prev => ({ ...prev, open: false }))}
+        items={[{ label: 'Remove color assignment', onClick: onRemove }]}
       />
     </>
   )

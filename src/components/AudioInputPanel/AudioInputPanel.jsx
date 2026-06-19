@@ -96,7 +96,9 @@ export function AudioInputPanel({ audioConfig, updateAudioConfig, audioDevices, 
   )
 }
 
-const HOVER_RADIUS = 0.22
+const HOVER_RADIUS = 0.18
+const DRAG_RADIUS_MAX = 0.70
+const DRAG_RADIUS_GROWTH = 0.55
 // Gradient stops for legend bar (same palette as heatmapCellColor)
 const LEGEND_GRADIENT = 'linear-gradient(to right, hsl(240,70%,38%), hsl(190,75%,42%), hsl(120,60%,38%), hsl(45,90%,50%), hsl(5,85%,48%))'
 
@@ -122,7 +124,7 @@ function FrequencyHeatmapEditor({ frequencyMap, mapSize, onUpdate, disabled }) {
     e.preventDefault()
     e.currentTarget.setPointerCapture(e.pointerId)
     const { nx, ny } = getDotPos(index)
-    dragRef.current = { accDelta: 0, currentValues: [...frequencyMap], nx, ny }
+    dragRef.current = { accDelta: 0, accMovement: 0, currentValues: [...frequencyMap], nx, ny }
     setIsDragging(true)
   }
 
@@ -133,11 +135,14 @@ function FrequencyHeatmapEditor({ frequencyMap, mapSize, onUpdate, disabled }) {
     }
     if (!dragRef.current || !e.buttons || disabled) return
     dragRef.current.accDelta += e.movementY / 60
-    const { accDelta, currentValues, nx: cx, ny: cy } = dragRef.current
+    dragRef.current.accMovement += Math.abs(e.movementY) / 60
+    const { accDelta, accMovement, currentValues, nx: cx, ny: cy } = dragRef.current
+    const radius = Math.min(HOVER_RADIUS + accMovement * DRAG_RADIUS_GROWTH, DRAG_RADIUS_MAX)
     const newMap = currentValues.map((startVal, i) => {
       const { nx, ny } = getDotPos(i)
       const dist = Math.sqrt((nx - cx) ** 2 + (ny - cy) ** 2)
-      const weight = Math.max(0, 1 - dist / HOVER_RADIUS)
+      const t = Math.max(0, 1 - dist / radius)
+      const weight = t * t * (3 - 2 * t)  // smoothstep — soft edges, no sharp cutoff
       return Math.max(0, Math.min(1, startVal + accDelta * weight))
     })
     onUpdate(newMap)

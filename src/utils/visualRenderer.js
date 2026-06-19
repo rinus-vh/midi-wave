@@ -14,7 +14,6 @@ const parseBgColor = (hex, isDark) => {
 const getWireColor = (colorValue, colorConfig, materialSettings, isSolid = false) => {
   if (materialSettings?.preset === 'chrome') return '#e8e8e8'
   if (isSolid) return materialSettings?.color || '#ffffff'
-  if (colorConfig.useMidi) return colorConfig.colors[0] || '#ffffff'
   const hexColor = Math.floor((colorValue / 100) * 0xFFFFFF).toString(16).padStart(6, '0')
   return `#${hexColor}`
 }

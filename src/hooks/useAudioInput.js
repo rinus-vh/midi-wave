@@ -9,7 +9,7 @@ export function useAudioInput({ enabled, deviceId }) {
   const [permissionError, setPermissionError] = useState(null)
 
   // Only enumerate devices when audio is enabled so we don't trigger a
-  // microphone permission dialog on startup (which in Chrome defers / blocks
+  // microphone permission dialog on startup (which in Firefox defers / blocks
   // the MIDI permission request and causes it to never be recorded).
   useEffect(() => {
     if (!enabled) return

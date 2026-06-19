@@ -42,6 +42,7 @@ export default function App() {
   const [solidColorCycleConfig, setSolidColorCycleConfig] = React.useState({ midiNote: null, colors: [] })
   const bgColorCycleIndexRef = React.useRef(0)
   const solidColorCycleIndexRef = React.useRef(0)
+  const wireframeColorCycleIndexRef = React.useRef(0)
   const bgColorCycleConfigRef = React.useRef(bgColorCycleConfig)
   const solidColorCycleConfigRef = React.useRef(solidColorCycleConfig)
   React.useEffect(() => { bgColorCycleConfigRef.current = bgColorCycleConfig }, [bgColorCycleConfig])
@@ -72,8 +73,10 @@ export default function App() {
   // Stable refs for use inside the MIDI event callback
   const midiAssignmentsRef = React.useRef(midiAssignments)
   const midiConfigRef = React.useRef(midiConfig)
+  const colorConfigRef = React.useRef(colorConfig)
   React.useEffect(() => { midiAssignmentsRef.current = midiAssignments }, [midiAssignments])
   React.useEffect(() => { midiConfigRef.current = midiConfig }, [midiConfig])
+  React.useEffect(() => { colorConfigRef.current = colorConfig }, [colorConfig])
 
   React.useEffect(() => {
     if (!selectedInput) return
@@ -112,6 +115,14 @@ export default function App() {
             updateControl(settingKey, low + Math.random() * (high - low))
           }
         })
+
+        // wireframe color cycling
+        const wireCfg = colorConfigRef.current
+        if (wireCfg.useMidi && wireCfg.midiNote === data1 && wireCfg.colors.length > 0) {
+          wireframeColorCycleIndexRef.current = (wireframeColorCycleIndexRef.current + 1) % wireCfg.colors.length
+          const hex = wireCfg.colors[wireframeColorCycleIndexRef.current].replace('#', '')
+          updateControl('color', (parseInt(hex, 16) / 0xFFFFFF) * 100)
+        }
 
         // bgColor cycling
         const bgCfg = bgColorCycleConfigRef.current
@@ -259,6 +270,16 @@ export default function App() {
               updateBgColorCycleConfig,
               solidColorCycleConfig,
               updateSolidColorCycleConfig,
+              colorAssignments: {
+                wireframeColor: colorConfig.midiNote !== null ? [{ noteNumber: colorConfig.midiNote, chance: 1 }] : [],
+                bgColor: bgColorCycleConfig.midiNote !== null ? [{ noteNumber: bgColorCycleConfig.midiNote, chance: 1 }] : [],
+                solidColor: solidColorCycleConfig.midiNote !== null ? [{ noteNumber: solidColorCycleConfig.midiNote, chance: 1 }] : [],
+              },
+              onRemoveColorAssignment: key => {
+                if (key === 'wireframeColor') updateColorConfig({ useMidi: false, midiNote: null })
+                else if (key === 'bgColor') updateBgColorCycleConfig({ midiNote: null, colors: [] })
+                else if (key === 'solidColor') updateSolidColorCycleConfig({ midiNote: null, colors: [] })
+              },
             }}
           />
         </MidiDragContextProvider>
@@ -313,6 +334,8 @@ function AppPanels({
   updateBgColorCycleConfig,
   solidColorCycleConfig,
   updateSolidColorCycleConfig,
+  colorAssignments,
+  onRemoveColorAssignment,
 }) {
   const settingsPanel   = usePanelManager('settings',    'Settings',     { defaultVisible: true })
   const outputPanel     = usePanelManager('output',      'Output',       { defaultVisible: true })
@@ -332,11 +355,56 @@ function AppPanels({
       />
 
       <Grid layoutClassName={styles.gridLayout}>
+        {settingsPanel.visible && (
+          <Panel
+            isMinimizable
+            title='Settings'
+            minWidth={4}
+            minHeight={9}
+            onMinimize={settingsPanel.minimize}
+          >
+            <SettingsPanel
+              onOpenWireframe={wireframePanel.open}
+              onOpenMaterial={materialPanel.open}
+              onOpenLighting={lightingPanel.open}
+              onOpenMidiNotes={midiNotesPanel.open}
+              onOpenAudioInput={audioPanel.open}
+              defaultBgColor={isDark ? '#000000ff' : '#f4f4f4ff'}
+              defaultMeshColor={isDark ? '#ffffff' : '#262626'}
+              {...{
+                controls,
+                updateControl,
+                midiConfig,
+                updateMidiConfig,
+                colorConfig,
+                midiStatus,
+                midiErrorMessage,
+                requestMidiAccess,
+                midiInputs,
+                selectedInput,
+                invertColors,
+                bgColor,
+                materialSettings,
+                lightingSettings,
+                midiAssignments,
+                onSelectedInputChange,
+                onInvertColorsChange,
+                onBgColorChange,
+                onReset,
+                onAddMidiAssignment,
+                onClearMidiAssignments,
+                bgColorCycleConfig,
+                updateBgColorCycleConfig,
+              }}
+            />
+          </Panel>
+        )}
+
         {outputPanel.visible && (
           <Panel
             isMinimizable
             title='Output'
-            minWidth={9}
+            minWidth={8}
             minHeight={9}
             onMinimize={outputPanel.minimize}
           >
@@ -358,51 +426,6 @@ function AppPanels({
           </Panel>
         )}
 
-        {settingsPanel.visible && (
-          <Panel
-            isMinimizable
-            title='Settings'
-            minWidth={4}
-            minHeight={9}
-            onMinimize={settingsPanel.minimize}
-          >
-            <SettingsPanel
-              onOpenWireframe={wireframePanel.open}
-              onOpenMaterial={materialPanel.open}
-              onOpenLighting={lightingPanel.open}
-              onOpenMidiNotes={midiNotesPanel.open}
-              onOpenAudioInput={audioPanel.open}
-              {...{
-                controls,
-                updateControl,
-                midiConfig,
-                updateMidiConfig,
-                colorConfig,
-                midiStatus,
-                midiErrorMessage,
-                requestMidiAccess,
-                midiInputs,
-                selectedInput,
-                invertColors,
-                bgColor,
-                defaultBgColor: isDark ? '#000000ff' : '#f4f4f4ff',
-                defaultMeshColor: isDark ? '#ffffff' : '#262626',
-                materialSettings,
-                lightingSettings,
-                midiAssignments,
-                onSelectedInputChange,
-                onInvertColorsChange,
-                onBgColorChange,
-                onReset,
-                onAddMidiAssignment,
-                onClearMidiAssignments,
-                bgColorCycleConfig,
-                updateBgColorCycleConfig,
-              }}
-            />
-          </Panel>
-        )}
-
         {midiNotesPanel.visible && (
           <Panel
             isCloseable
@@ -414,7 +437,15 @@ function AppPanels({
             onMinimize={midiNotesPanel.minimize}
           >
             <MidiNoteSettingsAssignmentPanel
-              {...{ trackedNotes, activeNoteNumbers, midiAssignments, onUpdateMidiAssignment, onRemoveMidiAssignment }}
+              {...{
+                trackedNotes,
+                activeNoteNumbers,
+                midiAssignments,
+                onUpdateMidiAssignment,
+                onRemoveMidiAssignment,
+                colorAssignments,
+                onRemoveColorAssignment
+              }}
             />
           </Panel>
         )}
@@ -446,7 +477,16 @@ function AppPanels({
             onMinimize={wireframePanel.minimize}
           >
             <WireframePanel
-              {...{ controls, colorConfig, updateColorConfig, addColor, removeColor, onColorChange, wireframeSettings, updateWireframe }}
+              {...{
+                controls,
+                colorConfig,
+                updateColorConfig,
+                addColor,
+                removeColor,
+                onColorChange,
+                wireframeSettings,
+                updateWireframe
+              }}
             />
           </Panel>
         )}
