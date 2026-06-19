@@ -104,6 +104,12 @@ function FrequencyHeatmapEditor({ frequencyMap, mapSize, onUpdate, disabled }) {
   const dragRef = React.useRef(null)
   const gridRef = React.useRef(null)
   const [mousePos, setMousePos] = React.useState(null)
+  const [isDragging, setIsDragging] = React.useState(false)
+
+  React.useEffect(() => {
+    document.body.style.cursor = isDragging ? 'none' : ''
+    return () => { document.body.style.cursor = '' }
+  }, [isDragging])
 
   function getDotPos(i) {
     const col = i % mapSize
@@ -117,7 +123,7 @@ function FrequencyHeatmapEditor({ frequencyMap, mapSize, onUpdate, disabled }) {
     e.currentTarget.setPointerCapture(e.pointerId)
     const { nx, ny } = getDotPos(index)
     dragRef.current = { accDelta: 0, currentValues: [...frequencyMap], nx, ny }
-    document.body.style.cursor = 'none'
+    setIsDragging(true)
   }
 
   function handlePointerMove(e) {
@@ -139,7 +145,7 @@ function FrequencyHeatmapEditor({ frequencyMap, mapSize, onUpdate, disabled }) {
 
   function handlePointerUp() {
     dragRef.current = null
-    document.body.style.cursor = ''
+    setIsDragging(false)
     setMousePos(null)
   }
 
@@ -165,9 +171,9 @@ function FrequencyHeatmapEditor({ frequencyMap, mapSize, onUpdate, disabled }) {
       <div
         ref={gridRef}
         style={{ '--map-size': mapSize }}
-        className={styles.heatmapGrid}
         onPointerMove={handlePointerMove}
         onMouseLeave={() => setMousePos(null)}
+        className={styles.heatmapGrid}
       >
         {frequencyMap.map((value, i) => {
           const col = i % mapSize
@@ -182,6 +188,7 @@ function FrequencyHeatmapEditor({ frequencyMap, mapSize, onUpdate, disabled }) {
             const dist = Math.sqrt(dx * dx + dy * dy)
             boost = Math.max(0, 1 - dist / 0.22) * 0.38
           }
+
           return (
             <div
               key={i}
@@ -200,7 +207,7 @@ function FrequencyHeatmapEditor({ frequencyMap, mapSize, onUpdate, disabled }) {
 
       <div className={styles.heatmapLegend}>
         <LabelSm>Treble</LabelSm>
-        <div className={styles.legendBar} style={{ background: LEGEND_GRADIENT }} />
+        <div style={{ background: LEGEND_GRADIENT }} className={styles.legendBar} />
         <LabelSm>Bass</LabelSm>
       </div>
     </div>

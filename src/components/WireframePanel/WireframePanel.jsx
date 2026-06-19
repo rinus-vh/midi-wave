@@ -83,15 +83,11 @@ export function WireframePanel({
         onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setIsDragOver(true) }}
         onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setIsDragOver(false) }}
         onDrop={handleColorDrop}
-        className={cx(isDragOver && styles.isDragOver)}
       >
         <ColorInput
+          colorArrayIsActive={colorConfig.useMidi}
           value={colorValueHex}
           onChange={onColorChange}
-          layoutClassName={styles.colorInputLayout}
-          open={colorPickerOpen}
-          onOpenChange={setColorPickerOpen}
-          colorArrayIsActive={colorConfig.useMidi}
           colorArray={colorConfig.colors}
           onColorArrayChange={(i, hex) => {
             const updated = [...colorConfig.colors]
@@ -101,6 +97,10 @@ export function WireframePanel({
           onAddColor={addColor}
           onRemoveColor={removeColor}
           onClearColorArray={handleClearColorArray}
+          open={colorPickerOpen}
+          onOpenChange={setColorPickerOpen}
+          layoutClassName={styles.colorInputLayout}
+          {...{ isDragOver }}
         />
       </PanelContainerSettingsRow>
 

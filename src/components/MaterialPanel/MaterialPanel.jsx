@@ -62,16 +62,12 @@ export function MaterialPanel({ materialSettings, updateMaterial, solidColorCycl
           })
           setSolidColorPickerOpen(true)
         }}
-        className={cx(isDragOver && styles.isDragOver)}
       >
         <ColorInput
+          colorArrayIsActive={solidColorCycleConfig?.midiNote !== null}
+          disabled={isChrome}
           value={isChrome ? MATERIAL_DEFAULTS.color : materialSettings.color}
           onChange={color => updateMaterial({ color })}
-          disabled={isChrome}
-          layoutClassName={styles.colorInputLayout}
-          open={solidColorPickerOpen}
-          onOpenChange={setSolidColorPickerOpen}
-          colorArrayIsActive={solidColorCycleConfig?.midiNote !== null}
           colorArray={solidColorCycleConfig?.colors ?? []}
           onColorArrayChange={(i, hex) => {
             const updated = [...solidColorCycleConfig.colors]
@@ -81,6 +77,10 @@ export function MaterialPanel({ materialSettings, updateMaterial, solidColorCycl
           onAddColor={() => updateSolidColorCycleConfig({ colors: [...solidColorCycleConfig.colors, materialSettings.color] })}
           onRemoveColor={i => updateSolidColorCycleConfig({ colors: solidColorCycleConfig.colors.filter((_, idx) => idx !== i) })}
           onClearColorArray={() => { updateSolidColorCycleConfig({ midiNote: null, colors: [] }); setSolidColorPickerOpen(false) }}
+          open={solidColorPickerOpen}
+          onOpenChange={setSolidColorPickerOpen}
+          layoutClassName={styles.colorInputLayout}
+          {...{ isDragOver }}
         />
       </PanelContainerSettingsRow>
 

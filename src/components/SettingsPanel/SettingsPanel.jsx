@@ -73,7 +73,15 @@ export function SettingsPanel({
 }) {
   const { getDraggedNote } = useMidiDrag()
   const [midiErrorModalOpen, setMidiErrorModalOpen] = React.useState(false)
-  React.useEffect(() => { if (midiErrorMessage) setMidiErrorModalOpen(true) }, [midiErrorMessage])
+  const midiErrorMessageRef = React.useRef(midiErrorMessage)
+  React.useEffect(() => {
+    if (midiErrorMessage && midiErrorMessage !== midiErrorMessageRef.current) {
+      midiErrorMessageRef.current = midiErrorMessage
+      setTimeout(() => setMidiErrorModalOpen(true), 0)
+    } else {
+      midiErrorMessageRef.current = midiErrorMessage
+    }
+  }, [midiErrorMessage])
   const [bgColorPickerOpen, setBgColorPickerOpen] = React.useState(false)
   const [bgColorDragOver, setBgColorDragOver] = React.useState(false)
   const knobCellsRef = React.useRef({})
@@ -284,15 +292,12 @@ export function SettingsPanel({
               })
               setBgColorPickerOpen(true)
             }}
-            className={cx(bgColorDragOver && styles.isDragOver)}
           >
             <ColorInput
               adjustOpacity
+              colorArrayIsActive={bgColorCycleConfig.midiNote !== null}
               value={bgColor}
               onChange={onBgColorChange}
-              open={bgColorPickerOpen}
-              onOpenChange={setBgColorPickerOpen}
-              colorArrayIsActive={bgColorCycleConfig.midiNote !== null}
               colorArray={bgColorCycleConfig.colors}
               onColorArrayChange={(i, hex) => {
                 const updated = [...bgColorCycleConfig.colors]
@@ -302,7 +307,10 @@ export function SettingsPanel({
               onAddColor={() => updateBgColorCycleConfig({ colors: [...bgColorCycleConfig.colors, bgColor] })}
               onRemoveColor={i => updateBgColorCycleConfig({ colors: bgColorCycleConfig.colors.filter((_, idx) => idx !== i) })}
               onClearColorArray={() => { updateBgColorCycleConfig({ midiNote: null, colors: [] }); setBgColorPickerOpen(false) }}
+              open={bgColorPickerOpen}
+              onOpenChange={setBgColorPickerOpen}
               layoutClassName={styles.colorInputLayout}
+              {...{ isDragOver: bgColorDragOver }}
             />
           </PanelContainerSettingsRow>
 
